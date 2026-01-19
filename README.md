@@ -1,6 +1,6 @@
 # OpenHome - Room Planner
 
-A minimal, feature-rich room planning web app built with Next.js, React, TypeScript, and Tailwind CSS.
+A no-bullshit room planning web app built with Next.js, React, TypeScript, and Tailwind CSS.
 
 ## Features
 

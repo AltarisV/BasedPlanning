@@ -1,23 +1,26 @@
 /**
- * Snapping logic for room edges (OUTER footprint incl. walls).
+ * Snapping logic for room edges.
  * Snap tolerance: 2 cm
  *
- * Assumption (based on your latest change request):
- * - room.xCm / room.yCm / widthCm / heightCm describe the INNER room rectangle
- * - walls are drawn OUTSIDE the inner rectangle
- * - snapping should therefore align OUTER wall edges (typical floor plan behaviour)
+ * WALL OVERLAP MODE:
+ * When rooms are snapped together, their walls should overlap (share the same space).
+ * This means we snap INNER edges together, so both rooms' walls occupy the same area.
+ * 
+ * Example: Room A's east wall and Room B's west wall overlap when:
+ * - Room A's inner right edge (xCm + widthCm) equals Room B's inner left edge (xCm)
  */
 
 import { Room } from '../model/types';
 
 export const SNAP_TOLERANCE_CM = 2;
+export const WALL_SNAP_TOLERANCE_CM = 15; // Larger tolerance for wall-overlap snapping (intended behavior)
 
 export interface SnapResult {
   xCm: number;
   yCm: number;
   snappedX: boolean;
   snappedY: boolean;
-  // Optional: expose the snapped guide positions (outer edge) for your indicator lines
+  // Optional: expose the snapped guide positions for indicator lines
   xGuideCm?: number;
   yGuideCm?: number;
 }
@@ -33,29 +36,47 @@ function getWallThicknessCm(room: Room, globalWallThicknessCm: number): WallSide
   };
 }
 
+/**
+ * Get inner bounds of a room (the floor area, not including walls)
+ */
+function innerBoundsCm(
+  room: Room,
+  xCm: number = room.xCm,
+  yCm: number = room.yCm
+) {
+  return {
+    left: xCm,
+    right: xCm + room.widthCm,
+    top: yCm,
+    bottom: yCm + room.heightCm,
+  };
+}
+
+/**
+ * Get outer bounds of a room (including walls)
+ */
 function outerBoundsCm(
   room: Room,
   globalWallThicknessCm: number,
-  // allow overriding x/y when evaluating a dragged target
   xCm: number = room.xCm,
   yCm: number = room.yCm
 ) {
   const w = getWallThicknessCm(room, globalWallThicknessCm);
-
-  const left = xCm - w.west;
-  const right = xCm + room.widthCm + w.east;
-  const top = yCm - w.north;
-  const bottom = yCm + room.heightCm + w.south;
-
-  return { left, right, top, bottom, w };
+  return {
+    left: xCm - w.west,
+    right: xCm + room.widthCm + w.east,
+    top: yCm - w.north,
+    bottom: yCm + room.heightCm + w.south,
+    w,
+  };
 }
 
 /**
  * Calculate snap points for a moving room against all other rooms.
- *
- * IMPORTANT: You must pass globalWallThicknessCm so we can compute outer edges.
- * In your page.tsx change the call to:
- *   const snap = Snap.calculateSnap(room, appState.rooms, xCm, yCm, appState.globalWallThicknessCm);
+ * 
+ * WALL OVERLAP SNAPPING:
+ * Rooms snap so their walls overlap. When moving room's right edge approaches
+ * another room's left edge, the walls will share the same space.
  */
 export function calculateSnap(
   movingRoom: Room,
@@ -66,7 +87,9 @@ export function calculateSnap(
 ): SnapResult {
   const others = allRooms.filter((r) => r.id !== movingRoom.id);
 
+  const movingInner = innerBoundsCm(movingRoom, targetXCm, targetYCm);
   const movingOuter = outerBoundsCm(movingRoom, globalWallThicknessCm, targetXCm, targetYCm);
+  const movingWalls = movingOuter.w;
 
   let snappedXCm = targetXCm;
   let snappedYCm = targetYCm;
@@ -75,79 +98,101 @@ export function calculateSnap(
   let xGuideCm: number | undefined;
   let yGuideCm: number | undefined;
 
-  // Helper to snap movingOuter.left/right to a target edge, adjusting inner xCm accordingly
-  const trySnapX = (movingEdge: 'left' | 'right', targetEdgeValueCm: number) => {
-    const movingValue = movingOuter[movingEdge];
-    const dist = Math.abs(movingValue - targetEdgeValueCm);
-    if (dist <= SNAP_TOLERANCE_CM) {
-      // We want movingOuter[movingEdge] == targetEdgeValueCm.
-      // Convert that to inner xCm:
-      // movingOuter.left  = x - west
-      // movingOuter.right = x + width + east
-      const w = movingOuter.w;
-      if (movingEdge === 'left') {
-        snappedXCm = targetEdgeValueCm + w.west;
-        xGuideCm = targetEdgeValueCm;
-      } else {
-        snappedXCm = targetEdgeValueCm - (movingRoom.widthCm + w.east);
-        xGuideCm = targetEdgeValueCm;
-      }
-      snappedX = true;
-      // update movingOuter for subsequent snaps to use the new x
-      const updated = outerBoundsCm(movingRoom, globalWallThicknessCm, snappedXCm, snappedYCm);
-      movingOuter.left = updated.left;
-      movingOuter.right = updated.right;
-      movingOuter.top = updated.top;
-      movingOuter.bottom = updated.bottom;
-      movingOuter.w = updated.w;
-      return true;
-    }
-    return false;
-  };
-
-  const trySnapY = (movingEdge: 'top' | 'bottom', targetEdgeValueCm: number) => {
-    const movingValue = movingOuter[movingEdge];
-    const dist = Math.abs(movingValue - targetEdgeValueCm);
-    if (dist <= SNAP_TOLERANCE_CM) {
-      const w = movingOuter.w;
-      if (movingEdge === 'top') {
-        snappedYCm = targetEdgeValueCm + w.north;
-        yGuideCm = targetEdgeValueCm;
-      } else {
-        snappedYCm = targetEdgeValueCm - (movingRoom.heightCm + w.south);
-        yGuideCm = targetEdgeValueCm;
-      }
-      snappedY = true;
-      const updated = outerBoundsCm(movingRoom, globalWallThicknessCm, snappedXCm, snappedYCm);
-      movingOuter.left = updated.left;
-      movingOuter.right = updated.right;
-      movingOuter.top = updated.top;
-      movingOuter.bottom = updated.bottom;
-      movingOuter.w = updated.w;
-      return true;
-    }
-    return false;
-  };
-
   for (const other of others) {
-    const o = outerBoundsCm(other, globalWallThicknessCm);
+    const otherInner = innerBoundsCm(other);
+    const otherOuter = outerBoundsCm(other, globalWallThicknessCm);
+    const otherWalls = otherOuter.w;
 
-    // Snap X: moving left/right to other left/right
+    // === SNAP X ===
     if (!snappedX) {
-      // moving left to other right OR other left
-      if (trySnapX('left', o.right) || trySnapX('left', o.left)) {
-        // snapped
-      } else if (trySnapX('right', o.left) || trySnapX('right', o.right)) {
-        // snapped
+      // WALL OVERLAP: Moving room's OUTER RIGHT to other's INNER LEFT
+      // This makes moving room's east wall overlap with other's west wall
+      // Moving outer right = movingInner.right + movingWalls.east
+      let dist = Math.abs(movingOuter.right - otherInner.left);
+      if (dist <= WALL_SNAP_TOLERANCE_CM) {
+        // We want: movingInner.right + movingWalls.east = otherInner.left
+        // So: movingXCm + movingRoom.widthCm + movingWalls.east = otherInner.left
+        // So: movingXCm = otherInner.left - movingRoom.widthCm - movingWalls.east
+        snappedXCm = otherInner.left - movingRoom.widthCm - movingWalls.east;
+        snappedX = true;
+        xGuideCm = otherInner.left;
+      }
+
+      // WALL OVERLAP: Moving room's OUTER LEFT to other's INNER RIGHT
+      // This makes moving room's west wall overlap with other's east wall
+      if (!snappedX) {
+        dist = Math.abs(movingOuter.left - otherInner.right);
+        if (dist <= WALL_SNAP_TOLERANCE_CM) {
+          // We want: movingInner.left - movingWalls.west = otherInner.right
+          // So: movingXCm - movingWalls.west = otherInner.right
+          // So: movingXCm = otherInner.right + movingWalls.west
+          snappedXCm = otherInner.right + movingWalls.west;
+          snappedX = true;
+          xGuideCm = otherInner.right;
+        }
+      }
+
+      // Alignment: outer left to outer left
+      if (!snappedX) {
+        dist = Math.abs(movingOuter.left - otherOuter.left);
+        if (dist <= SNAP_TOLERANCE_CM) {
+          snappedXCm = otherOuter.left + movingWalls.west;
+          snappedX = true;
+          xGuideCm = otherOuter.left;
+        }
+      }
+
+      // Alignment: outer right to outer right
+      if (!snappedX) {
+        dist = Math.abs(movingOuter.right - otherOuter.right);
+        if (dist <= SNAP_TOLERANCE_CM) {
+          snappedXCm = otherOuter.right - movingRoom.widthCm - movingWalls.east;
+          snappedX = true;
+          xGuideCm = otherOuter.right;
+        }
       }
     }
 
-    // Snap Y: moving top/bottom to other top/bottom
+    // === SNAP Y ===
     if (!snappedY) {
-      if (trySnapY('top', o.bottom) || trySnapY('top', o.top)) {
-        // snapped
-      } else if (trySnapY('bottom', o.top) || trySnapY('bottom', o.bottom)) {
-        // snapped
+      // WALL OVERLAP: Moving room's OUTER BOTTOM to other's INNER TOP
+      // This makes moving room's south wall overlap with other's north wall
+      let dist = Math.abs(movingOuter.bottom - otherInner.top);
+      if (dist <= WALL_SNAP_TOLERANCE_CM) {
+        snappedYCm = otherInner.top - movingRoom.heightCm - movingWalls.south;
+        snappedY = true;
+        yGuideCm = otherInner.top;
+      }
+
+      // WALL OVERLAP: Moving room's OUTER TOP to other's INNER BOTTOM
+      // This makes moving room's north wall overlap with other's south wall
+      if (!snappedY) {
+        dist = Math.abs(movingOuter.top - otherInner.bottom);
+        if (dist <= WALL_SNAP_TOLERANCE_CM) {
+          snappedYCm = otherInner.bottom + movingWalls.north;
+          snappedY = true;
+          yGuideCm = otherInner.bottom;
+        }
+      }
+
+      // Alignment: outer top to outer top
+      if (!snappedY) {
+        dist = Math.abs(movingOuter.top - otherOuter.top);
+        if (dist <= SNAP_TOLERANCE_CM) {
+          snappedYCm = otherOuter.top + movingWalls.north;
+          snappedY = true;
+          yGuideCm = otherOuter.top;
+        }
+      }
+
+      // Outer bottom to outer bottom (align rooms)
+      if (!snappedY) {
+        dist = Math.abs(movingOuter.bottom - otherOuter.bottom);
+        if (dist <= SNAP_TOLERANCE_CM) {
+          snappedYCm = otherOuter.bottom - movingRoom.heightCm - movingWalls.south;
+          snappedY = true;
+          yGuideCm = otherOuter.bottom;
+        }
       }
     }
 
@@ -164,9 +209,24 @@ export function calculateSnap(
   };
 }
 
+/** Snap tolerance for objects against walls - generous for easy wall placement */
+export const OBJECT_SNAP_TOLERANCE_CM = 25;
+/** Snap tolerance for object-to-object alignment - tighter for precision */
+export const OBJECT_TO_OBJECT_SNAP_TOLERANCE_CM = 15;
+
+export interface PlacedObjectForSnap {
+  id: string;
+  xCm: number;
+  yCm: number;
+  widthCm: number;
+  heightCm: number;
+}
+
 /**
- * Calculate snapping for a placed object inside a room so it aligns to inner walls.
- * Snaps object's left/right/top/bottom edges to the room inner edges when within tolerance.
+ * Calculate snapping for a placed object inside a room.
+ * Snaps to:
+ * 1. Room inner edges (walls) - with generous tolerance
+ * 2. Other objects in the same room - for alignment
  */
 export function calculatePlacedObjectSnap(
   objWidthCm: number,
@@ -174,7 +234,9 @@ export function calculatePlacedObjectSnap(
   room: Room,
   targetXCm: number,
   targetYCm: number,
-  toleranceCm: number = 5
+  toleranceCm: number = OBJECT_SNAP_TOLERANCE_CM,
+  otherObjects: PlacedObjectForSnap[] = [],
+  currentObjectId?: string
 ): SnapResult {
   let snappedX = false;
   let snappedY = false;
@@ -195,30 +257,132 @@ export function calculatePlacedObjectSnap(
   const objTop = targetYCm;
   const objBottom = targetYCm + objHeightCm;
 
-  // Snap X: left edge to room left, or right edge to room right
-  const distLeft = Math.abs(objLeft - leftEdge);
-  const distRight = Math.abs(objRight - rightEdge);
-  if (distLeft <= toleranceCm && distLeft <= distRight) {
+  // Track best snap distances
+  let bestSnapDistX = toleranceCm + 1;
+  let bestSnapDistY = toleranceCm + 1;
+
+  // === SNAP TO ROOM WALLS ===
+  
+  // Snap left edge to room left
+  const distLeftToWall = Math.abs(objLeft - leftEdge);
+  if (distLeftToWall <= toleranceCm && distLeftToWall < bestSnapDistX) {
     snappedXCm = leftEdge;
     snappedX = true;
     xGuideCm = leftEdge;
-  } else if (distRight <= toleranceCm) {
+    bestSnapDistX = distLeftToWall;
+  }
+
+  // Snap right edge to room right
+  const distRightToWall = Math.abs(objRight - rightEdge);
+  if (distRightToWall <= toleranceCm && distRightToWall < bestSnapDistX) {
     snappedXCm = rightEdge - objWidthCm;
     snappedX = true;
     xGuideCm = rightEdge;
+    bestSnapDistX = distRightToWall;
   }
 
-  // Snap Y: top edge to room top, or bottom edge to room bottom
-  const distTop = Math.abs(objTop - topEdge);
-  const distBottom = Math.abs(objBottom - bottomEdge);
-  if (distTop <= toleranceCm && distTop <= distBottom) {
+  // Snap top edge to room top
+  const distTopToWall = Math.abs(objTop - topEdge);
+  if (distTopToWall <= toleranceCm && distTopToWall < bestSnapDistY) {
     snappedYCm = topEdge;
     snappedY = true;
     yGuideCm = topEdge;
-  } else if (distBottom <= toleranceCm) {
+    bestSnapDistY = distTopToWall;
+  }
+
+  // Snap bottom edge to room bottom
+  const distBottomToWall = Math.abs(objBottom - bottomEdge);
+  if (distBottomToWall <= toleranceCm && distBottomToWall < bestSnapDistY) {
     snappedYCm = bottomEdge - objHeightCm;
     snappedY = true;
     yGuideCm = bottomEdge;
+    bestSnapDistY = distBottomToWall;
+  }
+
+  // === SNAP TO OTHER OBJECTS (use tighter tolerance) ===
+  const objSnapTolerance = OBJECT_TO_OBJECT_SNAP_TOLERANCE_CM;
+  
+  for (const other of otherObjects) {
+    if (currentObjectId && other.id === currentObjectId) continue;
+
+    const otherLeft = other.xCm;
+    const otherRight = other.xCm + other.widthCm;
+    const otherTop = other.yCm;
+    const otherBottom = other.yCm + other.heightCm;
+
+    // X snapping: align edges with other object
+    // My left to other's right (place next to it)
+    const distLeftToOtherRight = Math.abs(objLeft - otherRight);
+    if (distLeftToOtherRight <= objSnapTolerance && distLeftToOtherRight < bestSnapDistX) {
+      snappedXCm = otherRight;
+      snappedX = true;
+      xGuideCm = otherRight;
+      bestSnapDistX = distLeftToOtherRight;
+    }
+
+    // My right to other's left (place next to it)
+    const distRightToOtherLeft = Math.abs(objRight - otherLeft);
+    if (distRightToOtherLeft <= objSnapTolerance && distRightToOtherLeft < bestSnapDistX) {
+      snappedXCm = otherLeft - objWidthCm;
+      snappedX = true;
+      xGuideCm = otherLeft;
+      bestSnapDistX = distRightToOtherLeft;
+    }
+
+    // My left to other's left (align edges)
+    const distLeftToOtherLeft = Math.abs(objLeft - otherLeft);
+    if (distLeftToOtherLeft <= objSnapTolerance && distLeftToOtherLeft < bestSnapDistX) {
+      snappedXCm = otherLeft;
+      snappedX = true;
+      xGuideCm = otherLeft;
+      bestSnapDistX = distLeftToOtherLeft;
+    }
+
+    // My right to other's right (align edges)
+    const distRightToOtherRight = Math.abs(objRight - otherRight);
+    if (distRightToOtherRight <= objSnapTolerance && distRightToOtherRight < bestSnapDistX) {
+      snappedXCm = otherRight - objWidthCm;
+      snappedX = true;
+      xGuideCm = otherRight;
+      bestSnapDistX = distRightToOtherRight;
+    }
+
+    // Y snapping: align edges with other object
+    // My top to other's bottom (place below it)
+    const distTopToOtherBottom = Math.abs(objTop - otherBottom);
+    if (distTopToOtherBottom <= objSnapTolerance && distTopToOtherBottom < bestSnapDistY) {
+      snappedYCm = otherBottom;
+      snappedY = true;
+      yGuideCm = otherBottom;
+      bestSnapDistY = distTopToOtherBottom;
+    }
+
+    // My bottom to other's top (place above it)
+    const distBottomToOtherTop = Math.abs(objBottom - otherTop);
+    if (distBottomToOtherTop <= objSnapTolerance && distBottomToOtherTop < bestSnapDistY) {
+      snappedYCm = otherTop - objHeightCm;
+      snappedY = true;
+      yGuideCm = otherTop;
+      bestSnapDistY = distBottomToOtherTop;
+    }
+
+    // My top to other's top (align edges)
+    const distTopToOtherTop = Math.abs(objTop - otherTop);
+    if (distTopToOtherTop <= objSnapTolerance && distTopToOtherTop < bestSnapDistY) {
+      snappedYCm = otherTop;
+      snappedY = true;
+      yGuideCm = otherTop;
+      bestSnapDistY = distTopToOtherTop;
+    }
+
+    // My bottom to other's bottom (align edges)
+    const distBottomToOtherBottom = Math.abs(objBottom - otherBottom);
+    if (distBottomToOtherBottom <= objSnapTolerance && distBottomToOtherBottom < bestSnapDistY) {
+      snappedYCm = otherBottom - objHeightCm;
+      snappedY = true;
+      yGuideCm = otherBottom;
+      bestSnapDistY = distBottomToOtherBottom;
+    }
   }
 
   return {
