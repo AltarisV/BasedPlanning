@@ -94,7 +94,7 @@ export default function RoomEditor() {
   });
 
   // Types for label positions
-  type RoomLabelPos = { roomId: string; x: number; y: number; isSelected: boolean };
+  type RoomLabelPos = { roomId: string; x: number; y: number; isSelected: boolean; placement: 'above' | 'below' | 'center' };
   type PlacedLabelPos = { placedId: string; x: number; y: number };
 
   // Calculate label positions for HTML overlay
@@ -108,12 +108,117 @@ export default function RoomEditor() {
     const offsetX = (rect.width - vbSize * scaleToScreen) / 2;
     const offsetY = (rect.height - vbSize * scaleToScreen) / 2;
 
+    // Helper: check if a label position would overlap with walls or other rooms
+    const checkLabelOverlap = (
+      labelCenterXCm: number,
+      labelCenterYCm: number,
+      labelWidthCm: number,
+      labelHeightCm: number,
+      excludeRoomId: string
+    ): boolean => {
+      const labelLeft = labelCenterXCm - labelWidthCm / 2;
+      const labelRight = labelCenterXCm + labelWidthCm / 2;
+      const labelTop = labelCenterYCm - labelHeightCm / 2;
+      const labelBottom = labelCenterYCm + labelHeightCm / 2;
+      
+      // Check against all rooms (including walls)
+      for (const otherRoom of appState.rooms) {
+        if (otherRoom.id === excludeRoomId) continue;
+        
+        // Get wall thickness
+        const wallN = otherRoom.wallThickness?.north ?? appState.globalWallThicknessCm;
+        const wallS = otherRoom.wallThickness?.south ?? appState.globalWallThicknessCm;
+        const wallW = otherRoom.wallThickness?.west ?? appState.globalWallThicknessCm;
+        const wallE = otherRoom.wallThickness?.east ?? appState.globalWallThicknessCm;
+        
+        // Room bounds including walls
+        const roomLeft = otherRoom.xCm - wallW;
+        const roomRight = otherRoom.xCm + otherRoom.widthCm + wallE;
+        const roomTop = otherRoom.yCm - wallN;
+        const roomBottom = otherRoom.yCm + otherRoom.heightCm + wallS;
+        
+        // Check overlap
+        if (labelRight > roomLeft && labelLeft < roomRight && labelBottom > roomTop && labelTop < roomBottom) {
+          return true;
+        }
+      }
+      
+      // Also check if label is outside the current room's walls
+      const currentRoom = appState.rooms.find(r => r.id === excludeRoomId);
+      if (currentRoom) {
+        const wallN = currentRoom.wallThickness?.north ?? appState.globalWallThicknessCm;
+        const wallS = currentRoom.wallThickness?.south ?? appState.globalWallThicknessCm;
+        const wallW = currentRoom.wallThickness?.west ?? appState.globalWallThicknessCm;
+        const wallE = currentRoom.wallThickness?.east ?? appState.globalWallThicknessCm;
+        
+        // Check if overlapping with own walls
+        const roomLeft = currentRoom.xCm - wallW;
+        const roomRight = currentRoom.xCm + currentRoom.widthCm + wallE;
+        const roomTop = currentRoom.yCm - wallN;
+        const roomBottom = currentRoom.yCm + currentRoom.heightCm + wallS;
+        const innerTop = currentRoom.yCm;
+        const innerBottom = currentRoom.yCm + currentRoom.heightCm;
+        
+        // If label is in the wall area (between outer and inner boundary)
+        if (labelTop < innerTop && labelBottom > roomTop && labelRight > roomLeft && labelLeft < roomRight) {
+          return true; // overlapping north wall
+        }
+        if (labelBottom > innerBottom && labelTop < roomBottom && labelRight > roomLeft && labelLeft < roomRight) {
+          return true; // overlapping south wall
+        }
+      }
+      
+      return false;
+    };
+
     const rooms: RoomLabelPos[] = appState.rooms.map((room) => {
-      const contentX = room.xCm * SCALE + (room.widthCm * SCALE) / 2;
-      const contentY = room.yCm * SCALE;
+      const roomCenterX = room.xCm + room.widthCm / 2;
+      
+      // Estimate label size in cm (based on room name length and typical font size)
+      const estimatedLabelWidthCm = Math.max(room.name.length * 8, 60); // ~8cm per char, min 60cm
+      const estimatedLabelHeightCm = 30; // ~30cm height
+      
+      // Get wall thickness
+      const wallN = room.wallThickness?.north ?? appState.globalWallThicknessCm;
+      const wallS = room.wallThickness?.south ?? appState.globalWallThicknessCm;
+      
+      // Try position ABOVE room (outside north wall)
+      const aboveY = room.yCm - wallN - estimatedLabelHeightCm / 2 - 5;
+      const aboveOverlaps = checkLabelOverlap(roomCenterX, aboveY, estimatedLabelWidthCm, estimatedLabelHeightCm, room.id);
+      
+      // Try position BELOW room (outside south wall)  
+      const belowY = room.yCm + room.heightCm + wallS + estimatedLabelHeightCm / 2 + 5;
+      const belowOverlaps = checkLabelOverlap(roomCenterX, belowY, estimatedLabelWidthCm, estimatedLabelHeightCm, room.id);
+      
+      // Determine best placement
+      let placement: 'above' | 'below' | 'center' = 'center';
+      let labelYCm: number;
+      
+      if (!aboveOverlaps) {
+        placement = 'above';
+        labelYCm = aboveY;
+      } else if (!belowOverlaps) {
+        placement = 'below';
+        labelYCm = belowY;
+      } else {
+        // Fallback: center in room
+        placement = 'center';
+        labelYCm = room.yCm + room.heightCm / 2;
+      }
+      
+      // Convert to screen coordinates
+      const contentX = roomCenterX * SCALE;
+      const contentY = labelYCm * SCALE;
       const transformedX = appState.panX + appState.zoom * contentX;
       const transformedY = appState.panY + appState.zoom * contentY;
-      return { roomId: room.id, x: offsetX + transformedX * scaleToScreen, y: offsetY + transformedY * scaleToScreen, isSelected: appState.selectedRoomIds.includes(room.id) };
+      
+      return { 
+        roomId: room.id, 
+        x: offsetX + transformedX * scaleToScreen, 
+        y: offsetY + transformedY * scaleToScreen, 
+        isSelected: appState.selectedRoomIds.includes(room.id),
+        placement
+      };
     });
 
     const placed: PlacedLabelPos[] = (appState.placedObjects ?? []).map((p) => {
@@ -127,7 +232,7 @@ export default function RoomEditor() {
     }).filter((p): p is PlacedLabelPos => p !== null);
 
     return { roomLabelPositions: rooms, placedLabelPositions: placed };
-  }, [appState.rooms, appState.placedObjects, appState.objectDefs, appState.panX, appState.panY, appState.zoom, appState.selectedRoomIds, svgDimensions]);
+  }, [appState.rooms, appState.placedObjects, appState.objectDefs, appState.panX, appState.panY, appState.zoom, appState.selectedRoomIds, svgDimensions, appState.globalWallThicknessCm]);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -330,8 +435,12 @@ export default function RoomEditor() {
           <div className="pointer-events-none absolute inset-0 z-10">
             {roomLabelPositions.map((label) => {
               const room = appState.rooms.find((r) => r.id === label.roomId);
+              // Different transform based on placement
+              const transform = label.placement === 'center' 
+                ? 'translate(-50%, -50%)' 
+                : 'translate(-50%, -50%)'; // For above/below, position is already calculated correctly
               return (
-                <div key={label.roomId} style={{ position: 'absolute', left: `${label.x}px`, top: `${label.y}px`, transform: 'translate(-50%, -110%)', fontSize: '13px', lineHeight: '16px', whiteSpace: 'nowrap', fontWeight: 500, zIndex: 20 }} className={`rounded-md px-2 py-1 shadow-sm border ${label.isSelected ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-white/90 border-gray-200 text-gray-700'}`}>
+                <div key={label.roomId} style={{ position: 'absolute', left: `${label.x}px`, top: `${label.y}px`, transform, fontSize: '13px', lineHeight: '16px', whiteSpace: 'nowrap', fontWeight: 500, zIndex: 20 }} className={`rounded-md px-2 py-1 shadow-sm border ${label.isSelected ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-white/90 border-gray-200 text-gray-700'}`}>
                   <div>{room?.name}</div>
                 </div>
               );
