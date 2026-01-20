@@ -1,4 +1,4 @@
-# OpenHome - Deployment Complete ✅
+# BasedPlanning - Deployment Complete ✅
 
 ## Project Status: Ready for Development
 
@@ -59,7 +59,7 @@ Your complete Next.js room planning web app has been successfully created!
 ## 📂 Complete File Structure
 
 ```
-OpenHome/
+BasedPlanning/
 ├── app/
 │   ├── page.tsx                 # Main RoomEditor component
 │   └── layout.tsx               # Root layout with metadata
@@ -292,7 +292,7 @@ For questions or issues:
 
 ## 🎉 Ready to Go!
 
-Your OpenHome Room Planner is complete and ready to run.
+Your BasedPlanning Room Planner is complete and ready to run.
 
 **Start developing now**: `npm install && npm run dev`
 

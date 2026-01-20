@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenHome Room Planner - Quick Setup Guide
+# BasedPlanning Room Planner - Quick Setup Guide
 
 ## 🚀 Getting Started
 

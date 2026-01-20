@@ -1,4 +1,4 @@
-// Quick Reference Guide for OpenHome Room Planner
+// Quick Reference Guide for BasedPlanning Room Planner
 
 /** ============================================================================
  * DEVELOPMENT QUICK START
@@ -225,7 +225,7 @@ console.log('Selected room:', selectedRoom);
 
 // DevTools for localStorage:
 // Open DevTools → Application → Local Storage → http://localhost:3000
-// Look for key 'openhome_app_state' to inspect saved data
+// Look for key 'basedplanning_app_state' to inspect saved data
 
 // Export state for debugging:
 // Click "Export JSON" button, open downloaded file in text editor

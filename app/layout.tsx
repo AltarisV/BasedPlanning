@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'OpenHome - Room Planner',
+  title: 'BasedPlanning - Room Planner',
   description: 'A no-bullshit room planning web app',
 };
 

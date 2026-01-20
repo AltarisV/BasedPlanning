@@ -61,9 +61,9 @@ export default function LeftPanel({
         <div className="p-5 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">O</span>
+              <span className="text-white text-sm font-bold">B</span>
             </div>
-            <h1 className="text-xl font-bold text-slate-800 flex-1">OpenHome</h1>
+            <h1 className="text-xl font-bold text-slate-800 flex-1">BasedPlanning</h1>
             {onClose && (
               <button
                 onClick={onClose}

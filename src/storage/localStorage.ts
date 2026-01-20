@@ -5,7 +5,7 @@
 import { AppState } from '../model/types';
 import { createInitialState } from '../model/state';
 
-const STORAGE_KEY = 'openhome_app_state';
+const STORAGE_KEY = 'basedplanning_app_state';
 
 /**
  * Save app state to localStorage.

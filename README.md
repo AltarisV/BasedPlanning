@@ -1,4 +1,4 @@
-# OpenHome - Room Planner
+# BasedPlanning - Room Planner
 
 A no-bullshit room planning web app built with Next.js, React, TypeScript, and Tailwind CSS.
 
