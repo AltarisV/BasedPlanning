@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'OpenHome - Room Planner',
-  description: 'A minimal room planning web app',
+  description: 'A no-bullshit room planning web app',
 };
 
 export default function RootLayout({
