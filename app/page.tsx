@@ -686,220 +686,304 @@ export default function RoomEditor() {
   const snap = currentSnapResult;
 
   return (
-    <div className="h-screen flex bg-gray-50" ref={containerRef} tabIndex={-1}>
-      {/* Left Panel: Add Room Form + Settings */}
-      <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">OpenHome</h1>
-
-        {/* Undo/Redo Buttons */}
-        <div className="mb-6 flex gap-2">
-          <button
-            onClick={handleUndo}
-            disabled={!State.canUndo(history)}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-              State.canUndo(history)
-                ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            }`}
-            title="Undo (Ctrl+Z)"
-          >
-            ↶ Undo
-          </button>
-          <button
-            onClick={handleRedo}
-            disabled={!State.canRedo(history)}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${
-              State.canRedo(history)
-                ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            }`}
-            title="Redo (Ctrl+Y)"
-          >
-            ↷ Redo
-          </button>
+    <div className="h-screen flex bg-slate-100" ref={containerRef} tabIndex={-1}>
+      {/* Left Panel: Tools & Library */}
+      <div className="w-72 bg-white border-r border-slate-200 overflow-y-auto flex flex-col shadow-sm">
+        {/* Header */}
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">O</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-800">OpenHome</h1>
+          </div>
         </div>
 
-        {/* Add Room Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Add Room</h2>
-          <AddRoomForm onAddRoom={handleAddRoom} />
-        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {/* Undo/Redo */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={handleUndo}
+              disabled={!State.canUndo(history)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                State.canUndo(history)
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+              }`}
+              title="Undo (Ctrl+Z)"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 10h10a5 5 0 015 5v0a5 5 0 01-5 5H3M3 10l6-6M3 10l6 6"/></svg>
+              Undo
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={!State.canRedo(history)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                State.canRedo(history)
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+              }`}
+              title="Redo (Ctrl+Y)"
+            >
+              Redo
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10H11a5 5 0 00-5 5v0a5 5 0 005 5h10M21 10l-6-6M21 10l-6 6"/></svg>
+            </button>
+          </div>
 
-        {/* Global Wall Thickness */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Settings</h2>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Default Wall Thickness (cm)
-          </label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={appState.globalWallThicknessCm}
-            onChange={(e) => handleUpdateGlobalWallThickness(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+          {/* Add Room Section */}
+          <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Add Room</h2>
+            <AddRoomForm onAddRoom={handleAddRoom} />
+          </div>
 
-        {/* Import/Export */}
-        <div className="mb-8 space-y-3">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Data</h2>
-          <button
-            onClick={handleExport}
-            className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition"
-          >
-            Export JSON
-          </button>
-          <label className="block">
-            <input
-              type="file"
-              accept=".json"
-              onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  handleImport(e.target.files[0]);
-                }
-              }}
-              className="hidden"
-            />
-            <span className="w-full block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-center cursor-pointer">
-              Import JSON
-            </span>
-          </label>
-        </div>
+          {/* Settings */}
+          <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Settings</h2>
+            <label className="block text-sm font-medium text-slate-600 mb-2">
+              Default Wall Thickness
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={appState.globalWallThicknessCm}
+                onChange={(e) => handleUpdateGlobalWallThickness(Number(e.target.value))}
+                className="input-field flex-1"
+              />
+              <span className="text-sm text-slate-400">cm</span>
+            </div>
+          </div>
 
-        {/* Rooms List */}
+          {/* Import/Export */}
+          <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Data</h2>
+            <div className="space-y-2">
+              <button
+                onClick={handleExport}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-all"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Export JSON
+              </button>
+              <label className="block">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleImport(e.target.files[0]);
+                    }
+                  }}
+                  className="hidden"
+                />
+                <span className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all cursor-pointer">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                  Import JSON
+                </span>
+              </label>
+            </div>
+          </div>
+
           {/* Objects Library */}
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Objects</h2>
-          <ObjectDefForm onAdd={handleAddObjectDef} />
-          <div className="mt-3">
-            {(appState.objectDefs ?? []).map((def) => (
-              <div key={def.id} className="flex items-center gap-2 mb-2">
-                <div className="flex-1 text-sm">{def.name} ({def.widthCm}×{def.heightCm}cm)</div>
-                <button
-                  onClick={() => handlePlaceObjectDef(def.id)}
-                  disabled={appState.selectedRoomIds.length === 0}
-                  title={appState.selectedRoomIds.length > 0 ? `Place in selected room` : 'Select a room first'}
-                  className={`px-2 py-1 rounded text-xs ${appState.selectedRoomIds.length > 0 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
-                >
-                  Place
-                </button>
-              </div>
-            ))}
+          <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Objects Library</h2>
+            <ObjectDefForm onAdd={handleAddObjectDef} />
+            <div className="mt-4 space-y-2">
+              {(appState.objectDefs ?? []).map((def) => (
+                <div key={def.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg hover:bg-slate-100 transition-all">
+                  <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-700 truncate">{def.name}</div>
+                    <div className="text-xs text-slate-400">{def.widthCm} × {def.heightCm} cm</div>
+                  </div>
+                  <button
+                    onClick={() => handlePlaceObjectDef(def.id)}
+                    disabled={appState.selectedRoomIds.length === 0}
+                    title={appState.selectedRoomIds.length > 0 ? `Place in selected room` : 'Select a room first'}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      appState.selectedRoomIds.length > 0 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Place
+                  </button>
+                </div>
+              ))}
+              {(appState.objectDefs ?? []).length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">No objects defined yet</p>
+              )}
+            </div>
           </div>
 
           {/* Placed Objects */}
-          <h3 className="text-sm font-medium text-gray-700 mt-4 mb-2">Placed Objects</h3>
-          <div className="space-y-2">
-            {(appState.placedObjects ?? []).map((p) => (
-              <div key={p.id} className="flex items-center gap-2">
-                <div className="flex-1 text-sm">{(appState.objectDefs ?? []).find((d)=>d.id===p.defId)?.name}</div>
-                <button onClick={() => handleDuplicatePlaced(p.id)} className="px-2 py-1 bg-gray-200 rounded text-xs">Duplicate</button>
-                <button
-                  onClick={() => {
-                    const current = p.rotationDeg ?? 0;
-                    const newState = State.updatePlacedObjectRotation(appState, p.id, (current + 90) % 360);
-                    updateState(newState);
-                  }}
-                  className="px-2 py-1 bg-gray-200 rounded text-xs"
-                >
-                  Rotate
-                </button>
+          {(appState.placedObjects ?? []).length > 0 && (
+            <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Placed Objects</h2>
+              <div className="space-y-2">
+                {(appState.placedObjects ?? []).map((p) => {
+                  const def = (appState.objectDefs ?? []).find((d) => d.id === p.defId);
+                  const room = appState.rooms.find((r) => r.id === p.roomId);
+                  const isSelected = appState.selectedObjectId === p.id;
+                  return (
+                    <div 
+                      key={p.id} 
+                      onClick={() => updateState(State.selectObject(appState, p.id), false)}
+                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
+                        isSelected ? 'bg-blue-50 border border-blue-200' : 'bg-slate-50 hover:bg-slate-100 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-slate-700 truncate">{def?.name}</div>
+                        <div className="text-xs text-slate-400">{room?.name} • {p.rotationDeg ?? 0}°</div>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDuplicatePlaced(p.id); }} 
+                        className="p-1.5 hover:bg-slate-200 rounded transition-all"
+                        title="Duplicate"
+                      >
+                        <svg className="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const current = p.rotationDeg ?? 0;
+                          const newState = State.updatePlacedObjectRotation(appState, p.id, (current + 90) % 360);
+                          updateState(newState);
+                        }}
+                        className="p-1.5 hover:bg-slate-200 rounded transition-all"
+                        title="Rotate 90°"
+                      >
+                        <svg className="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Rooms ({appState.rooms.length})</h2>
-          <p className="text-xs text-gray-500 mb-2">Shift+click to multi-select</p>
-          <div className="space-y-2">
-            {appState.rooms.map((room) => (
-              <button
-                key={room.id}
-                onClick={(e) => handleSelectRoom(room.id, e.shiftKey)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition font-medium text-sm ${
-                  appState.selectedRoomIds.includes(room.id)
-                    ? 'bg-blue-100 text-blue-900 border border-blue-300'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {room.name}
-              </button>
-            ))}
+          {/* Rooms List */}
+          <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Rooms ({appState.rooms.length})</h2>
+            <p className="text-xs text-slate-400 mb-3">Shift+click to multi-select</p>
+            <div className="space-y-1.5">
+              {appState.rooms.map((room) => (
+                <button
+                  key={room.id}
+                  onClick={(e) => handleSelectRoom(room.id, e.shiftKey)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all font-medium text-sm ${
+                    appState.selectedRoomIds.includes(room.id)
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${appState.selectedRoomIds.includes(room.id) ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
+                    <span className="flex-1 truncate">{room.name}</span>
+                    <span className="text-xs text-slate-400">{room.widthCm}×{room.heightCm}</span>
+                  </div>
+                </button>
+              ))}
+              {appState.rooms.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">No rooms yet</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Center Panel: SVG Editor */}
       <div className="flex-1 bg-white overflow-hidden flex flex-col">
-        {/* Zoom Controls */}
-        <div className="bg-gray-100 border-b border-gray-200 px-4 py-2 flex items-center gap-2">
-          <button
-            onClick={() => {
-              const newZoom = Math.max(0.1, appState.zoom - 0.2);
-              updateState(State.updateViewport(appState, appState.panX, appState.panY, newZoom), false);
-            }}
-            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium"
-          >
-            −
-          </button>
-          <span className="text-sm font-medium text-gray-600 w-16 text-center">
-            {Math.round(appState.zoom * 100)}%
-          </span>
-          <button
-            onClick={() => {
-              const newZoom = Math.min(3, appState.zoom + 0.2);
-              updateState(State.updateViewport(appState, appState.panX, appState.panY, newZoom), false);
-            }}
-            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium"
-          >
-            +
-          </button>
+        {/* Toolbar */}
+        <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center gap-3">
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            <button
+              onClick={() => {
+                const newZoom = Math.max(0.1, appState.zoom - 0.2);
+                updateState(State.updateViewport(appState, appState.panX, appState.panY, newZoom), false);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-600 font-medium transition-all"
+            >
+              −
+            </button>
+            <span className="text-sm font-medium text-slate-600 w-14 text-center">
+              {Math.round(appState.zoom * 100)}%
+            </span>
+            <button
+              onClick={() => {
+                const newZoom = Math.min(3, appState.zoom + 0.2);
+                updateState(State.updateViewport(appState, appState.panX, appState.panY, newZoom), false);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-600 font-medium transition-all"
+            >
+              +
+            </button>
+          </div>
+          
           <button
             onClick={() => {
               updateState(State.updateViewport(appState, 50, 50, 1), false);
             }}
-            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium ml-2"
+            className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
           >
-            Reset
+            Reset View
           </button>
 
+          <div className="w-px h-6 bg-slate-200 mx-1"></div>
+
           {/* Tool mode buttons */}
-          <div className="flex items-center gap-1 ml-4 border-l border-gray-300 pl-4">
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
             <button
               onClick={() => { setToolMode('select'); setMeasurePoints([]); }}
-              className={`px-3 py-1 rounded text-sm font-medium transition ${
-                toolMode === 'select'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 hover:bg-gray-50'
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
+                toolMode === 'select' 
+                  ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-200' 
+                  : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800 active:bg-slate-300'
               }`}
               title="Select tool (Esc)"
             >
-              ↖ Select
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+              Select
             </button>
             <button
               onClick={() => { setToolMode('measure'); setMeasurePoints([]); }}
-              className={`px-3 py-1 rounded text-sm font-medium transition ${
-                toolMode === 'measure'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 hover:bg-gray-50'
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
+                toolMode === 'measure' 
+                  ? 'bg-white text-amber-600 shadow-sm ring-1 ring-slate-200' 
+                  : 'text-slate-600 hover:bg-slate-200 hover:text-slate-800 active:bg-slate-300'
               }`}
               title="Measure tool (M)"
             >
-              📏 Measure
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h20M2 12l4-4m-4 4l4 4m16-4l-4-4m4 4l-4 4"/></svg>
+              Measure
             </button>
           </div>
 
           {/* Show measurement result */}
           {measureDistance !== null && (
-            <div className="ml-4 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded text-sm font-medium text-yellow-800">
-              Distance: {measureDistance.toFixed(1)} cm ({(measureDistance / 100).toFixed(2)} m)
+            <div className="ml-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-sm font-medium text-amber-700 flex items-center gap-2">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12h20M2 12l4-4m-4 4l4 4m16-4l-4-4m4 4l-4 4"/></svg>
+              {measureDistance.toFixed(1)} cm <span className="text-amber-500">({(measureDistance / 100).toFixed(2)} m)</span>
             </div>
           )}
 
           <span className="text-xs text-gray-500 ml-4">
             {appState.selectedRoomIds.length > 1 && `${appState.selectedRoomIds.length} rooms selected`}
           </span>
-          <span className="text-xs text-gray-500 ml-auto">Scroll to zoom • M: Measure</span>
+          {appState.selectedRoomIds.length > 1 && (
+            <span className="badge badge-blue ml-2">{appState.selectedRoomIds.length} rooms selected</span>
+          )}
+
+          <div className="ml-auto flex items-center gap-4 text-xs text-slate-400">
+            <span>Scroll to zoom</span>
+            <span className="text-slate-300">•</span>
+            <span>M for measure</span>
+          </div>
         </div>
 
         {/* SVG canvas container with overlay */}
@@ -908,7 +992,7 @@ export default function RoomEditor() {
             ref={svgRef}
             width="100%"
             height="100%"
-            className={`absolute inset-0 bg-gray-50 ${
+            className={`absolute inset-0 bg-slate-50 ${
               toolMode === 'measure' ? 'cursor-crosshair' : isDraggingRoom ? 'cursor-grabbing' : 'cursor-move'
             }`}
             onPointerDown={handleSvgPointerDown}
@@ -922,23 +1006,302 @@ export default function RoomEditor() {
           >
             {/* Use SVG transform attribute (reliable), not CSS transform */}
             <g transform={`translate(${appState.panX} ${appState.panY}) scale(${appState.zoom})`}>
-              {/* Background grid (optional) */}
+              {/* Background grid */}
               <defs>
                 <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-                  <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e5e7eb" strokeWidth="0.5" />
+                  <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
+                </pattern>
+                <pattern id="gridLarge" width="250" height="250" patternUnits="userSpaceOnUse">
+                  <path d="M 250 0 L 0 0 0 250" fill="none" stroke="#cbd5e1" strokeWidth="0.5" />
                 </pattern>
               </defs>
               <rect width="10000" height="10000" fill="url(#grid)" />
+              <rect width="10000" height="10000" fill="url(#gridLarge)" />
 
-              {/* Rooms with walls */}
-              {appState.rooms.map((room) => {
-                const wallThickness = {
-                  north: room.wallThickness?.north ?? appState.globalWallThicknessCm,
-                  south: room.wallThickness?.south ?? appState.globalWallThicknessCm,
-                  east: room.wallThickness?.east ?? appState.globalWallThicknessCm,
-                  west: room.wallThickness?.west ?? appState.globalWallThicknessCm,
+              {/* Pre-compute which walls have openings for z-ordering */}
+              {(() => {
+                // Collect all wall render data
+                type WallRenderData = {
+                  key: string;
+                  roomId: string;
+                  wallSide: WallSide;
+                  baseX: number;
+                  baseY: number;
+                  wallWidth: number;
+                  wallHeight: number;
+                  isHorizontal: boolean;
+                  hasOpenings: boolean;
+                  openings: WallOpening[];
+                  shouldRender: boolean;
+                  openingOffset: number; // Offset for door positions (wall extends beyond room)
                 };
+                
+                const wallsWithoutOpenings: WallRenderData[] = [];
+                const wallsWithOpenings: WallRenderData[] = [];
+                
+                appState.rooms.forEach((room) => {
+                  const wallThicknessData = {
+                    north: room.wallThickness?.north ?? appState.globalWallThicknessCm,
+                    south: room.wallThickness?.south ?? appState.globalWallThicknessCm,
+                    east: room.wallThickness?.east ?? appState.globalWallThicknessCm,
+                    west: room.wallThickness?.west ?? appState.globalWallThicknessCm,
+                  };
+                  
+                  const x = room.xCm * SCALE;
+                  const y = room.yCm * SCALE;
+                  const w = room.widthCm * SCALE;
+                  const h = room.heightCm * SCALE;
+                  
+                  const n = wallThicknessData.north * SCALE;
+                  const s = wallThicknessData.south * SCALE;
+                  const eT = wallThicknessData.east * SCALE;
+                  const wT = wallThicknessData.west * SCALE;
+                  
+                  const outerX = x - wT;
+                  const outerY = y - n;
+                  const outerW = w + wT + eT;
+                  const outerH = h + n + s;
+                  
+                  const roomOpenings = State.getOpeningsForRoom(appState, room.id);
+                  
+                  const adjacentNorth = State.findAdjacentRoom(appState, room, 'north');
+                  const adjacentSouth = State.findAdjacentRoom(appState, room, 'south');
+                  const adjacentEast = State.findAdjacentRoom(appState, room, 'east');
+                  const adjacentWest = State.findAdjacentRoom(appState, room, 'west');
+                  
+                  const wallConfigs: Array<{
+                    side: WallSide;
+                    baseX: number;
+                    baseY: number;
+                    width: number;
+                    height: number;
+                    isHorizontal: boolean;
+                    adjacent: ReturnType<typeof State.findAdjacentRoom>;
+                    openingOffset: number;
+                  }> = [
+                    { side: 'north', baseX: outerX, baseY: y - n, width: outerW, height: n, isHorizontal: true, adjacent: adjacentNorth, openingOffset: wT },
+                    { side: 'south', baseX: outerX, baseY: y + h, width: outerW, height: s, isHorizontal: true, adjacent: adjacentSouth, openingOffset: wT },
+                    { side: 'west', baseX: x - wT, baseY: outerY, width: wT, height: outerH, isHorizontal: false, adjacent: adjacentWest, openingOffset: n },
+                    { side: 'east', baseX: x + w, baseY: outerY, width: eT, height: outerH, isHorizontal: false, adjacent: adjacentEast, openingOffset: n },
+                  ];
+                  
+                  wallConfigs.forEach((config) => {
+                    let shouldRender = true;
+                    let openings: WallOpening[] = [];
+                    
+                    if (config.adjacent) {
+                      // Get combined openings from both rooms on shared wall
+                      openings = State.getCombinedWallOpenings(appState, room, config.side, config.adjacent);
+                      
+                      // For shared walls: if there are openings, the room that "owns" the opening should render
+                      // Otherwise, use the standard ID-based logic
+                      const myOpenings = roomOpenings.filter((o) => o.wall === config.side);
+                      const otherRoomOpenings = State.getOpeningsForWall(appState, config.adjacent.otherRoom.id, config.adjacent.otherWall);
+                      
+                      if (myOpenings.length > 0 || otherRoomOpenings.length > 0) {
+                        // There are openings on this shared wall
+                        // Only one room should render: prefer the one with openings
+                        // If both have openings, use ID-based logic
+                        if (myOpenings.length > 0 && otherRoomOpenings.length > 0) {
+                          // Both have openings - use standard ID logic
+                          shouldRender = State.shouldRenderSharedWall(room, config.adjacent.otherRoom);
+                        } else {
+                          // Only one has openings - that one renders
+                          shouldRender = myOpenings.length > 0;
+                        }
+                      } else {
+                        // No openings on either side - use standard ID logic
+                        shouldRender = State.shouldRenderSharedWall(room, config.adjacent.otherRoom);
+                      }
+                    } else {
+                      openings = roomOpenings.filter((o) => o.wall === config.side);
+                    }
+                    
+                    const wallData: WallRenderData = {
+                      key: `${room.id}-${config.side}`,
+                      roomId: room.id,
+                      wallSide: config.side,
+                      baseX: config.baseX,
+                      baseY: config.baseY,
+                      wallWidth: config.width,
+                      wallHeight: config.height,
+                      isHorizontal: config.isHorizontal,
+                      hasOpenings: openings.length > 0,
+                      openings,
+                      shouldRender,
+                      openingOffset: config.openingOffset,
+                    };
+                    
+                    if (shouldRender) {
+                      if (openings.length > 0) {
+                        wallsWithOpenings.push(wallData);
+                      } else {
+                        wallsWithoutOpenings.push(wallData);
+                      }
+                    }
+                  });
+                });
+                
+                const wallFill = '#8b7355';
+                
+                const renderWall = (wall: WallRenderData) => {
+                  if (wall.openings.length === 0) {
+                    return (
+                      <rect
+                        key={wall.key}
+                        x={wall.baseX}
+                        y={wall.baseY}
+                        width={wall.wallWidth}
+                        height={wall.wallHeight}
+                        fill={wallFill}
+                        opacity="0.6"
+                        pointerEvents="none"
+                      />
+                    );
+                  }
+                  
+                  const sortedOpenings = [...wall.openings].sort((a, b) => a.positionCm - b.positionCm);
+                  const segments: React.ReactNode[] = [];
+                  let currentPos = 0;
+                  
+                  sortedOpenings.forEach((opening, i) => {
+                    // Add offset because wall extends beyond room (includes corner overlaps)
+                    const openingStart = opening.positionCm * SCALE + wall.openingOffset;
+                    const openingWidth = opening.widthCm * SCALE;
+                    
+                    if (openingStart > currentPos) {
+                      if (wall.isHorizontal) {
+                        segments.push(
+                          <rect
+                            key={`${wall.key}-seg-${i}-before`}
+                            x={wall.baseX + currentPos}
+                            y={wall.baseY}
+                            width={openingStart - currentPos}
+                            height={wall.wallHeight}
+                            fill={wallFill}
+                            opacity="0.6"
+                            pointerEvents="none"
+                          />
+                        );
+                      } else {
+                        segments.push(
+                          <rect
+                            key={`${wall.key}-seg-${i}-before`}
+                            x={wall.baseX}
+                            y={wall.baseY + currentPos}
+                            width={wall.wallWidth}
+                            height={openingStart - currentPos}
+                            fill={wallFill}
+                            opacity="0.6"
+                            pointerEvents="none"
+                          />
+                        );
+                      }
+                    }
+                    
+                    if (wall.isHorizontal) {
+                      // Background rect to cover any wall underneath
+                      segments.push(
+                        <rect
+                          key={`${wall.key}-door-bg-${i}`}
+                          x={wall.baseX + openingStart}
+                          y={wall.baseY}
+                          width={openingWidth}
+                          height={wall.wallHeight}
+                          fill="#f8fafc"
+                          pointerEvents="none"
+                        />
+                      );
+                      segments.push(
+                        <line
+                          key={`${wall.key}-door-${i}`}
+                          x1={wall.baseX + openingStart}
+                          y1={wall.baseY + wall.wallHeight / 2}
+                          x2={wall.baseX + openingStart + openingWidth}
+                          y2={wall.baseY + wall.wallHeight / 2}
+                          stroke="#4ade80"
+                          strokeWidth={3}
+                          strokeDasharray="8,4"
+                          pointerEvents="none"
+                        />
+                      );
+                    } else {
+                      // Background rect to cover any wall underneath
+                      segments.push(
+                        <rect
+                          key={`${wall.key}-door-bg-${i}`}
+                          x={wall.baseX}
+                          y={wall.baseY + openingStart}
+                          width={wall.wallWidth}
+                          height={openingWidth}
+                          fill="#f8fafc"
+                          pointerEvents="none"
+                        />
+                      );
+                      segments.push(
+                        <line
+                          key={`${wall.key}-door-${i}`}
+                          x1={wall.baseX + wall.wallWidth / 2}
+                          y1={wall.baseY + openingStart}
+                          x2={wall.baseX + wall.wallWidth / 2}
+                          y2={wall.baseY + openingStart + openingWidth}
+                          stroke="#4ade80"
+                          strokeWidth={3}
+                          strokeDasharray="8,4"
+                          pointerEvents="none"
+                        />
+                      );
+                    }
+                    
+                    currentPos = openingStart + openingWidth;
+                  });
+                  
+                  const totalLength = wall.isHorizontal ? wall.wallWidth : wall.wallHeight;
+                  if (currentPos < totalLength) {
+                    if (wall.isHorizontal) {
+                      segments.push(
+                        <rect
+                          key={`${wall.key}-seg-after`}
+                          x={wall.baseX + currentPos}
+                          y={wall.baseY}
+                          width={totalLength - currentPos}
+                          height={wall.wallHeight}
+                          fill={wallFill}
+                          opacity="0.6"
+                          pointerEvents="none"
+                        />
+                      );
+                    } else {
+                      segments.push(
+                        <rect
+                          key={`${wall.key}-seg-after`}
+                          x={wall.baseX}
+                          y={wall.baseY + currentPos}
+                          width={wall.wallWidth}
+                          height={totalLength - currentPos}
+                          fill={wallFill}
+                          opacity="0.6"
+                          pointerEvents="none"
+                        />
+                      );
+                    }
+                  }
+                  
+                  return <React.Fragment key={wall.key}>{segments}</React.Fragment>;
+                };
+                
+                return (
+                  <>
+                    {/* Render walls WITHOUT openings first (lower z-index) */}
+                    {wallsWithoutOpenings.map(renderWall)}
+                    {/* Render walls WITH openings last (higher z-index - doors always visible) */}
+                    {wallsWithOpenings.map(renderWall)}
+                  </>
+                );
+              })()}
 
+              {/* Rooms (interiors, labels, handles, objects) */}
+              {appState.rooms.map((room) => {
                 const scale = SCALE;
                 const x = room.xCm * scale;
                 const y = room.yCm * scale;
@@ -952,201 +1315,8 @@ export default function RoomEditor() {
                 // Base size of 40 SVG units, scaled inversely with zoom so handles stay consistent on screen
                 const handleSize = 40 / appState.zoom;
 
-                // Get openings for this room
-                const roomOpenings = State.getOpeningsForRoom(appState, room.id);
-
-                // Check for adjacent rooms on each wall
-                const adjacentNorth = State.findAdjacentRoom(appState, room, 'north');
-                const adjacentSouth = State.findAdjacentRoom(appState, room, 'south');
-                const adjacentEast = State.findAdjacentRoom(appState, room, 'east');
-                const adjacentWest = State.findAdjacentRoom(appState, room, 'west');
-
                 return (
                   <React.Fragment key={room.id}>
-                    {/* Wall rectangles with door openings */}
-                    {(() => {
-                      const n = wallThickness.north * scale;
-                      const s = wallThickness.south * scale;
-                      const eT = wallThickness.east * scale;
-                      const wT = wallThickness.west * scale;
-
-                      // Outer extents:
-                      // West wall sits left of x, East wall sits right of x+w
-                      // North wall sits above y, South wall sits below y+h
-                      const outerX = x - wT;
-                      const outerY = y - n;
-                      const outerW = w + wT + eT;
-                      const outerH = h + n + s;
-
-                      const wallFill = '#8b7355';
-
-                      // Helper to render wall segments with openings
-                      const renderWallWithOpenings = (
-                        wallSide: WallSide,
-                        baseX: number,
-                        baseY: number,
-                        wallWidth: number,
-                        wallHeight: number,
-                        isHorizontal: boolean,
-                        adjacentRoom: ReturnType<typeof State.findAdjacentRoom>
-                      ) => {
-                        // If there's an adjacent room, check if this room should render the shared wall
-                        if (adjacentRoom && !State.shouldRenderSharedWall(room, adjacentRoom.otherRoom)) {
-                          // The other room will render this wall - skip it
-                          return null;
-                        }
-
-                        // Get openings for this wall
-                        let openings: WallOpening[];
-                        if (adjacentRoom) {
-                          // Combine openings from both rooms on shared wall
-                          openings = State.getCombinedWallOpenings(appState, room, wallSide, adjacentRoom);
-                        } else {
-                          openings = roomOpenings.filter((o) => o.wall === wallSide);
-                        }
-                        
-                        if (openings.length === 0) {
-                          // No openings, render solid wall
-                          return (
-                            <rect
-                              key={wallSide}
-                              x={baseX}
-                              y={baseY}
-                              width={wallWidth}
-                              height={wallHeight}
-                              fill={wallFill}
-                              opacity="0.6"
-                              pointerEvents="none"
-                            />
-                          );
-                        }
-
-                        // Sort openings by position
-                        const sortedOpenings = [...openings].sort((a, b) => a.positionCm - b.positionCm);
-                        const segments: React.ReactNode[] = [];
-                        let currentPos = 0;
-
-                        sortedOpenings.forEach((opening, i) => {
-                          const openingStart = opening.positionCm * scale;
-                          const openingWidth = opening.widthCm * scale;
-
-                          // Wall segment before this opening
-                          if (openingStart > currentPos) {
-                            if (isHorizontal) {
-                              segments.push(
-                                <rect
-                                  key={`${wallSide}-seg-${i}-before`}
-                                  x={baseX + currentPos}
-                                  y={baseY}
-                                  width={openingStart - currentPos}
-                                  height={wallHeight}
-                                  fill={wallFill}
-                                  opacity="0.6"
-                                  pointerEvents="none"
-                                />
-                              );
-                            } else {
-                              segments.push(
-                                <rect
-                                  key={`${wallSide}-seg-${i}-before`}
-                                  x={baseX}
-                                  y={baseY + currentPos}
-                                  width={wallWidth}
-                                  height={openingStart - currentPos}
-                                  fill={wallFill}
-                                  opacity="0.6"
-                                  pointerEvents="none"
-                                />
-                              );
-                            }
-                          }
-
-                          // Door opening visual (floor line)
-                          if (isHorizontal) {
-                            segments.push(
-                              <line
-                                key={`${wallSide}-door-${i}`}
-                                x1={baseX + openingStart}
-                                y1={baseY + wallHeight / 2}
-                                x2={baseX + openingStart + openingWidth}
-                                y2={baseY + wallHeight / 2}
-                                stroke="#4ade80"
-                                strokeWidth={3}
-                                strokeDasharray="8,4"
-                                pointerEvents="none"
-                              />
-                            );
-                          } else {
-                            segments.push(
-                              <line
-                                key={`${wallSide}-door-${i}`}
-                                x1={baseX + wallWidth / 2}
-                                y1={baseY + openingStart}
-                                x2={baseX + wallWidth / 2}
-                                y2={baseY + openingStart + openingWidth}
-                                stroke="#4ade80"
-                                strokeWidth={3}
-                                strokeDasharray="8,4"
-                                pointerEvents="none"
-                              />
-                            );
-                          }
-
-                          currentPos = openingStart + openingWidth;
-                        });
-
-                        // Wall segment after last opening
-                        const totalLength = isHorizontal ? wallWidth : wallHeight;
-                        if (currentPos < totalLength) {
-                          if (isHorizontal) {
-                            segments.push(
-                              <rect
-                                key={`${wallSide}-seg-after`}
-                                x={baseX + currentPos}
-                                y={baseY}
-                                width={totalLength - currentPos}
-                                height={wallHeight}
-                                fill={wallFill}
-                                opacity="0.6"
-                                pointerEvents="none"
-                              />
-                            );
-                          } else {
-                            segments.push(
-                              <rect
-                                key={`${wallSide}-seg-after`}
-                                x={baseX}
-                                y={baseY + currentPos}
-                                width={wallWidth}
-                                height={totalLength - currentPos}
-                                fill={wallFill}
-                                opacity="0.6"
-                                pointerEvents="none"
-                              />
-                            );
-                          }
-                        }
-
-                        return <>{segments}</>;
-                      };
-
-                      return (
-                        <>
-                          {/* North wall (above room, spans full outer width) */}
-                          {renderWallWithOpenings('north', outerX, y - n, outerW, n, true, adjacentNorth)}
-
-                          {/* South wall (below room, spans full outer width) */}
-                          {renderWallWithOpenings('south', outerX, y + h, outerW, s, true, adjacentSouth)}
-
-                          {/* West wall (left of room, spans full outer height) */}
-                          {renderWallWithOpenings('west', x - wT, outerY, wT, outerH, false, adjacentWest)}
-
-                          {/* East wall (right of room, spans full outer height) */}
-                          {renderWallWithOpenings('east', x + w, outerY, eT, outerH, false, adjacentEast)}
-                        </>
-                      );
-                    })()}
-
                     {/* Room rectangle (clickable, with data-room-id for event delegation) */}
                     <rect
                       x={x}
@@ -1383,7 +1553,7 @@ export default function RoomEditor() {
                     zIndex: 20,
                   }}
                 >
-                  <div className="rounded-md px-2 py-1 shadow-sm border bg-white/90 border-gray-200 text-gray-700">{def.name}</div>
+                  <div className="rounded-lg px-2.5 py-1 shadow-sm border bg-white/95 backdrop-blur-sm border-slate-200 text-slate-700">{def.name}</div>
                 </div>
               );
             })}
@@ -1391,22 +1561,30 @@ export default function RoomEditor() {
         </div>
       </div>
 
-      {/* Right Panel: Selected Room Properties */}
-      <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto p-6 shadow-sm">
+      {/* Right Panel: Properties */}
+      <div className="w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-sm flex flex-col">
+        <div className="p-5 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Properties</h2>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-5">
         {appState.selectedRoomIds.length > 1 ? (
           // Multi-select panel
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              {appState.selectedRoomIds.length} Rooms Selected
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Use arrow keys to nudge all selected rooms.
-            </p>
-            <div className="space-y-2 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 font-bold">{appState.selectedRoomIds.length}</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800">Rooms Selected</h3>
+                <p className="text-xs text-slate-400">Arrow keys to nudge</p>
+              </div>
+            </div>
+            <div className="space-y-1.5 mb-6">
               {appState.selectedRoomIds.map((id) => {
                 const r = State.getRoomById(appState, id);
                 return r ? (
-                  <div key={id} className="px-3 py-2 bg-blue-50 rounded-lg text-sm text-blue-900">
+                  <div key={id} className="px-3 py-2 bg-blue-50 rounded-lg text-sm text-blue-700 font-medium">
                     {r.name}
                   </div>
                 ) : null;
@@ -1418,7 +1596,7 @@ export default function RoomEditor() {
                   handleDeleteSelected();
                 }
               }}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition"
+              className="w-full btn btn-danger"
             >
               Delete All Selected
             </button>
@@ -1432,22 +1610,17 @@ export default function RoomEditor() {
             if (!selectedObject || !objectDef) return null;
             return (
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Object Properties</h2>
-                <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Name</label>
-                    <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-800">{objectDef.name}</div>
+                    <h3 className="font-semibold text-slate-800">{objectDef.name}</h3>
+                    <p className="text-xs text-slate-400">{objectDef.widthCm} × {objectDef.heightCm} cm</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Def Width</label>
-                      <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-800 text-sm">{objectDef.widthCm} cm</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Def Height</label>
-                      <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-800 text-sm">{objectDef.heightCm} cm</div>
-                    </div>
-                  </div>
+                </div>
+                
+                <div className="space-y-4">
                   
                   {/* Editable Position */}
                   <div className="grid grid-cols-2 gap-3">
@@ -1462,11 +1635,11 @@ export default function RoomEditor() {
                             updateState(State.updatePlacedObjectPosition(appState, selectedObject.id, val, selectedObject.yCm));
                           }
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="input-field"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Y Position (cm)</label>
+                      <label className="block text-sm font-medium text-slate-600 mb-1">Y (cm)</label>
                       <input
                         type="number"
                         value={Math.round(selectedObject.yCm)}
@@ -1476,14 +1649,14 @@ export default function RoomEditor() {
                             updateState(State.updatePlacedObjectPosition(appState, selectedObject.id, selectedObject.xCm, val));
                           }
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="input-field"
                       />
                     </div>
                   </div>
                   
                   {/* Editable Rotation */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Rotation</label>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Rotation</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -1495,15 +1668,15 @@ export default function RoomEditor() {
                             updateState(State.updatePlacedObjectRotation(appState, selectedObject.id, val % 360));
                           }
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="input-field flex-1"
                       />
-                      <span className="text-gray-500">°</span>
+                      <span className="text-slate-400">°</span>
                       <button
                         onClick={() => {
                           const current = selectedObject.rotationDeg ?? 0;
                           updateState(State.updatePlacedObjectRotation(appState, selectedObject.id, (current + 90) % 360));
                         }}
-                        className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition"
+                        className="btn btn-secondary"
                         title="Rotate 90°"
                       >
                         ↻ 90°
@@ -1511,23 +1684,23 @@ export default function RoomEditor() {
                     </div>
                   </div>
                   
-                  {/* Room (read-only for now) */}
+                  {/* Room (read-only) */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">In Room</label>
-                    <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-800">{containingRoom?.name ?? 'Unknown'}</div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">In Room</label>
+                    <div className="px-3 py-2 bg-slate-50 rounded-lg text-slate-700 text-sm">{containingRoom?.name ?? 'Unknown'}</div>
                   </div>
-                  
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete ${objectDef.name}?`)) {
-                        handleDeleteSelected();
-                      }
-                    }}
-                    className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition"
-                  >
-                    Delete Object
-                  </button>
                 </div>
+                  
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete ${objectDef.name}?`)) {
+                      handleDeleteSelected();
+                    }
+                  }}
+                  className="w-full btn btn-danger mt-6"
+                >
+                    Delete Object
+                </button>
               </div>
             );
           })()
@@ -1552,19 +1725,25 @@ export default function RoomEditor() {
             />
           </>
         ) : (
-          <div className="text-center text-gray-500 py-8">
-            <p>Select a room to edit its properties</p>
-            <p className="text-xs mt-2">Shift+click to multi-select</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <p className="text-slate-500 font-medium">No Selection</p>
+            <p className="text-xs text-slate-400 mt-1">Select a room or object to edit</p>
           </div>
         )}
+        </div>
       </div>
 
-      {/* Keyboard shortcuts help tooltip */}
-      <div className="fixed bottom-4 right-4 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-70 pointer-events-none">
-        <div><strong>Shortcuts:</strong></div>
-        <div>Ctrl+Z: Undo • Ctrl+Y: Redo</div>
-        <div>Del: Delete • M: Measure</div>
-        <div>Ctrl+A: Select All • Esc: Deselect</div>
+      {/* Keyboard shortcuts help */}
+      <div className="fixed bottom-4 right-4 bg-slate-800/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl shadow-lg">
+        <div className="font-semibold mb-1.5 text-slate-300">Shortcuts</div>
+        <div className="space-y-0.5 text-slate-400">
+          <div><span className="text-white">Ctrl+Z</span> Undo • <span className="text-white">Ctrl+Y</span> Redo</div>
+          <div><span className="text-white">Del</span> Delete • <span className="text-white">M</span> Measure</div>
+          <div><span className="text-white">Ctrl+A</span> Select All • <span className="text-white">Esc</span> Deselect</div>
+        </div>
       </div>
     </div>
   );
@@ -1595,41 +1774,42 @@ function AddRoomForm({ onAddRoom }: AddRoomFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <label className="block text-sm font-medium text-slate-600 mb-1">Name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Living Room"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="input-field"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Width (cm)</label>
-        <input
-          type="number"
-          min="1"
-          value={widthCm}
-          onChange={(e) => setWidthCm(Number(e.target.value))}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
-        <input
-          type="number"
-          min="1"
-          value={heightCm}
-          onChange={(e) => setHeightCm(Number(e.target.value))}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1">Width (cm)</label>
+          <input
+            type="number"
+            min="1"
+            value={widthCm}
+            onChange={(e) => setWidthCm(Number(e.target.value))}
+            className="input-field"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1">Height (cm)</label>
+          <input
+            type="number"
+            min="1"
+            value={heightCm}
+            onChange={(e) => setHeightCm(Number(e.target.value))}
+            className="input-field"
+          />
+        </div>
       </div>
 
       <button
         type="submit"
-        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+        className="w-full btn btn-primary"
       >
         Add Room
       </button>
@@ -1659,13 +1839,34 @@ function ObjectDefForm({ onAdd }: ObjectDefFormProps) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-2 mb-2">
-      <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-2 py-1 border rounded text-sm" />
+    <form onSubmit={submit} className="space-y-2">
+      <input 
+        value={name} 
+        onChange={(e) => setName(e.target.value)} 
+        placeholder="Object name"
+        className="input-field" 
+      />
       <div className="flex gap-2">
-        <input type="number" min={1} value={widthCm} onChange={(e)=>setWidthCm(Number(e.target.value))} className="w-1/2 px-2 py-1 border rounded text-sm" />
-        <input type="number" min={1} value={heightCm} onChange={(e)=>setHeightCm(Number(e.target.value))} className="w-1/2 px-2 py-1 border rounded text-sm" />
+        <input 
+          type="number" 
+          min={1} 
+          value={widthCm} 
+          onChange={(e)=>setWidthCm(Number(e.target.value))} 
+          className="input-field" 
+          placeholder="W"
+        />
+        <input 
+          type="number" 
+          min={1} 
+          value={heightCm} 
+          onChange={(e)=>setHeightCm(Number(e.target.value))} 
+          className="input-field" 
+          placeholder="H"
+        />
       </div>
-      <button type="submit" className="w-full px-2 py-1 bg-green-600 text-white rounded text-sm">Add Object</button>
+      <button type="submit" className="w-full btn bg-emerald-600 hover:bg-emerald-700 text-white">
+        Add Object
+      </button>
     </form>
   );
 }
@@ -1733,57 +1934,64 @@ function RoomPropertiesPanel({
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-4">Room Properties</h2>
-
-      {/* Name */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={handleNameChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Room header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+          <svg className="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={handleNameChange}
+            className="font-semibold text-slate-800 bg-transparent border-none outline-none w-full focus:ring-0 p-0"
+          />
+          <p className="text-xs text-slate-400">{room.widthCm} × {room.heightCm} cm</p>
+        </div>
       </div>
 
       {/* Dimensions */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Width (cm)</label>
-        <input
-          type="number"
-          min="1"
-          step="10"
-          value={widthCm}
-          onChange={(e) => setWidthCm(Number(e.target.value))}
-          onBlur={handleDimensionsChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
-        <input
-          type="number"
-          min="1"
-          step="10"
-          value={heightCm}
-          onChange={(e) => setHeightCm(Number(e.target.value))}
-          onBlur={handleDimensionsChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="mb-5">
+        <label className="block text-sm font-medium text-slate-600 mb-2">Dimensions</label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Width (cm)</label>
+            <input
+              type="number"
+              min="1"
+              step="10"
+              value={widthCm}
+              onChange={(e) => setWidthCm(Number(e.target.value))}
+              onBlur={handleDimensionsChange}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Height (cm)</label>
+            <input
+              type="number"
+              min="1"
+              step="10"
+              value={heightCm}
+              onChange={(e) => setHeightCm(Number(e.target.value))}
+              onBlur={handleDimensionsChange}
+              className="input-field"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Wall Thickness */}
-      <div className="mb-6 border-t border-gray-200 pt-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Wall Thickness (cm)</h3>
-        <p className="text-xs text-gray-500 mb-3">
-          Leave empty to use global default ({globalWallThickness}cm)
-        </p>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium text-slate-600">Wall Thickness</label>
+          <span className="text-xs text-slate-400">Default: {globalWallThickness}cm</span>
+        </div>
 
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">North</label>
+            <label className="block text-xs text-slate-400 mb-1">North</label>
             <input
               type="number"
               min="0"
@@ -1791,13 +1999,13 @@ function RoomPropertiesPanel({
               value={wallNorth}
               onChange={(e) => setWallNorth(e.target.value)}
               onBlur={handleWallThicknessChange}
-              placeholder="Default"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="—"
+              className="input-field text-center"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">South</label>
+            <label className="block text-xs text-slate-400 mb-1">South</label>
             <input
               type="number"
               min="0"
@@ -1805,13 +2013,13 @@ function RoomPropertiesPanel({
               value={wallSouth}
               onChange={(e) => setWallSouth(e.target.value)}
               onBlur={handleWallThicknessChange}
-              placeholder="Default"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="—"
+              className="input-field text-center"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">East</label>
+            <label className="block text-xs text-slate-400 mb-1">East</label>
             <input
               type="number"
               min="0"
@@ -1819,13 +2027,13 @@ function RoomPropertiesPanel({
               value={wallEast}
               onChange={(e) => setWallEast(e.target.value)}
               onBlur={handleWallThicknessChange}
-              placeholder="Default"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="—"
+              className="input-field text-center"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">West</label>
+            <label className="block text-xs text-slate-400 mb-1">West</label>
             <input
               type="number"
               min="0"
@@ -1833,8 +2041,8 @@ function RoomPropertiesPanel({
               value={wallWest}
               onChange={(e) => setWallWest(e.target.value)}
               onBlur={handleWallThicknessChange}
-              placeholder="Default"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="—"
+              className="input-field text-center"
             />
           </div>
         </div>
@@ -1847,7 +2055,7 @@ function RoomPropertiesPanel({
             onDelete(room.id);
           }
         }}
-        className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition"
+        className="w-full btn btn-danger"
       >
         Delete Room
       </button>
@@ -1935,19 +2143,19 @@ function DoorOpeningsPanel({ room, openings, onAddDoor, onUpdateDoor, onDeleteDo
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-gray-800 border-b pb-2">Door Openings</h3>
+    <div className="mt-6 pt-6 border-t border-slate-100">
+      <h3 className="text-sm font-semibold text-slate-700 mb-4">Door Openings</h3>
 
       {/* Add New Door */}
-      <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-        <p className="text-xs font-medium text-gray-600">Add New Door</p>
+      <div className="bg-slate-50 rounded-lg p-3 space-y-3 mb-4">
+        <p className="text-xs font-medium text-slate-500">Add New Door</p>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Wall</label>
+          <label className="block text-xs text-slate-400 mb-1">Wall</label>
           <select
             value={selectedWall}
             onChange={(e) => setSelectedWall(e.target.value as WallSide)}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="input-field"
           >
             {(['north', 'south', 'east', 'west'] as WallSide[]).map((wall) => (
               <option key={wall} value={wall}>
@@ -1959,90 +2167,90 @@ function DoorOpeningsPanel({ room, openings, onAddDoor, onUpdateDoor, onDeleteDo
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Position (cm)</label>
+            <label className="block text-xs text-slate-400 mb-1">Position (cm)</label>
             <input
               type="number"
               min="0"
               step="1"
               value={positionCm}
               onChange={(e) => setPositionCm(e.target.value)}
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="input-field"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Width (cm)</label>
+            <label className="block text-xs text-slate-400 mb-1">Width (cm)</label>
             <input
               type="number"
               min="10"
               step="1"
               value={widthCm}
               onChange={(e) => setWidthCm(e.target.value)}
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="input-field"
             />
           </div>
         </div>
 
         <button
           onClick={handleAddDoor}
-          className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition"
+          className="w-full btn bg-emerald-600 hover:bg-emerald-700 text-white"
         >
           Add Door
         </button>
 
-        <p className="text-xs text-gray-400">
-          Tip: Use the Measure tool (M) to find the exact position for your door.
+        <p className="text-xs text-slate-400">
+          Tip: Use the Measure tool (M) to find the exact position.
         </p>
       </div>
 
       {/* Existing Doors List */}
       {openings.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-600">Existing Doors ({openings.length})</p>
+          <p className="text-xs font-medium text-slate-500">Existing Doors ({openings.length})</p>
 
           {openings.map((opening) => (
             <div
               key={opening.id}
-              className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
+              className="bg-white border border-slate-200 rounded-lg p-2.5 text-sm"
             >
               {editingId === opening.id ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 w-16">{wallLabels[opening.wall].split(' ')[0]}</span>
+                    <span className="text-xs font-medium text-slate-500 w-16">{wallLabels[opening.wall].split(' ')[0]}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs text-gray-400">Position</label>
+                      <label className="block text-xs text-slate-400">Position</label>
                       <input
                         type="number"
                         min="0"
                         step="1"
                         value={editPosition}
                         onChange={(e) => setEditPosition(e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        className="input-field text-xs py-1"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400">Width</label>
+                      <label className="block text-xs text-slate-400">Width</label>
                       <input
                         type="number"
                         min="10"
                         step="1"
                         value={editWidth}
                         onChange={(e) => setEditWidth(e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                        className="input-field text-xs py-1"
                       />
                     </div>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleSaveEdit(opening)}
-                      className="flex-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
+                      className="flex-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-md font-medium"
                     >
                       Save
                     </button>
                     <button
                       onClick={handleCancelEdit}
-                      className="flex-1 px-2 py-1 bg-gray-300 hover:bg-gray-400 text-gray-700 text-xs rounded"
+                      className="flex-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-md font-medium"
                     >
                       Cancel
                     </button>
@@ -2051,24 +2259,26 @@ function DoorOpeningsPanel({ room, openings, onAddDoor, onUpdateDoor, onDeleteDo
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium text-gray-700">{wallLabels[opening.wall].split(' ')[0]}</span>
-                    <span className="text-gray-500 ml-2">
+                    <span className="font-medium text-slate-700">{wallLabels[opening.wall].split(' ')[0]}</span>
+                    <span className="text-slate-500 ml-2">
                       {opening.positionCm}cm → {opening.positionCm + opening.widthCm}cm
                     </span>
-                    <span className="text-gray-400 text-xs ml-1">({opening.widthCm}cm wide)</span>
+                    <span className="text-slate-400 text-xs ml-1">({opening.widthCm}cm)</span>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleStartEdit(opening)}
-                      className="px-2 py-1 text-blue-600 hover:bg-blue-50 text-xs rounded"
+                      className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-md transition-all"
+                      title="Edit"
                     >
-                      Edit
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
                     <button
                       onClick={() => onDeleteDoor(opening.id)}
-                      className="px-2 py-1 text-red-600 hover:bg-red-50 text-xs rounded"
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-all"
+                      title="Delete"
                     >
-                      Delete
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
                   </div>
                 </div>
@@ -2079,8 +2289,8 @@ function DoorOpeningsPanel({ room, openings, onAddDoor, onUpdateDoor, onDeleteDo
       )}
 
       {openings.length === 0 && (
-        <p className="text-xs text-gray-400 text-center py-2">
-          No doors added yet. Use the form above to add door openings to walls.
+        <p className="text-xs text-slate-400 text-center py-4">
+          No doors added yet
         </p>
       )}
     </div>
