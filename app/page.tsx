@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { AppState, HistoryState, ExtendedDragState, ToolMode, MeasurePoint, WallSide, WallOpening } from '@/src/model/types';
+import { AppState, HistoryState, ExtendedDragState, ToolMode, MeasurePoint, WallSide, WallOpening, OpeningType } from '@/src/model/types';
 import * as State from '@/src/model/state';
 import * as Snap from '@/src/editor/Snap';
 import { saveState, loadState, exportStateAsJson, importStateFromJson } from '@/src/storage/localStorage';
@@ -235,9 +235,9 @@ export default function RoomEditor() {
   };
   const handleDuplicatePlaced = (placedId: string) => updateState(State.duplicatePlacedObject(appState, placedId));
 
-  // Door handlers
-  const handleAddDoor = (roomId: string, wall: WallSide, positionCm: number, widthCm: number = DEFAULT_DOOR_WIDTH) => updateState(State.addWallOpening(appState, roomId, wall, 'door', positionCm, widthCm));
-  const handleUpdateDoor = (openingId: string, updates: Partial<WallOpening>) => updateState(State.updateWallOpening(appState, openingId, updates.positionCm, updates.widthCm));
+  // Door/Window handlers
+  const handleAddOpening = (roomId: string, wall: WallSide, positionCm: number, widthCm: number, type: OpeningType) => updateState(State.addWallOpening(appState, roomId, wall, type, positionCm, widthCm));
+  const handleUpdateDoor = (openingId: string, updates: Partial<WallOpening>) => updateState(State.updateWallOpening(appState, openingId, updates.positionCm, updates.widthCm, updates.type));
   const handleDeleteDoor = (openingId: string) => updateState(State.deleteWallOpening(appState, openingId));
 
   // Export/Import
@@ -391,7 +391,7 @@ export default function RoomEditor() {
         onDeleteRoom={handleDeleteRoom}
         onDeleteSelected={handleDeleteSelected}
         onToggleRoomLock={(roomId) => updateState(State.toggleRoomLock(appState, roomId))}
-        onAddDoor={handleAddDoor}
+        onAddOpening={handleAddOpening}
         onUpdateDoor={handleUpdateDoor}
         onDeleteDoor={handleDeleteDoor}
         onUpdatePlacedObjectPosition={(objectId, x, y) => updateState(State.updatePlacedObjectPosition(appState, objectId, x, y))}

@@ -654,13 +654,14 @@ export function addWallOpening(
 }
 
 /**
- * Update a wall opening's position and width.
+ * Update a wall opening's position, width, and/or type.
  */
 export function updateWallOpening(
   state: AppState,
   openingId: string,
   positionCm?: number,
-  widthCm?: number
+  widthCm?: number,
+  type?: OpeningType
 ): AppState {
   return {
     ...state,
@@ -670,6 +671,7 @@ export function updateWallOpening(
             ...o,
             ...(positionCm !== undefined && { positionCm }),
             ...(widthCm !== undefined && { widthCm }),
+            ...(type !== undefined && { type }),
           }
         : o
     ),

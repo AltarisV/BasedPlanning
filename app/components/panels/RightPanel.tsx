@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AppState, Room, PlacedObject, ObjectDef, WallOpening } from '../../../src/model/types';
+import { AppState, Room, PlacedObject, ObjectDef, WallOpening, OpeningType } from '../../../src/model/types';
 import * as State from '../../../src/model/state';
 import { RoomPropertiesPanel, DoorOpeningsPanel } from '../panels';
 
@@ -14,7 +14,7 @@ interface RightPanelProps {
   onDeleteRoom: (roomId: string) => void;
   onDeleteSelected: () => void;
   onToggleRoomLock: (roomId: string) => void;
-  onAddDoor: (roomId: string, wall: 'north' | 'south' | 'east' | 'west', position: number, width: number) => void;
+  onAddOpening: (roomId: string, wall: 'north' | 'south' | 'east' | 'west', position: number, width: number, type: OpeningType) => void;
   onUpdateDoor: (openingId: string, updates: Partial<WallOpening>) => void;
   onDeleteDoor: (openingId: string) => void;
   onUpdatePlacedObjectPosition: (objectId: string, x: number, y: number) => void;
@@ -35,7 +35,7 @@ export default function RightPanel({
   onDeleteRoom,
   onDeleteSelected,
   onToggleRoomLock,
-  onAddDoor,
+  onAddOpening,
   onUpdateDoor,
   onDeleteDoor,
   onUpdatePlacedObjectPosition,
@@ -138,11 +138,11 @@ export default function RightPanel({
             onToggleLock={onToggleRoomLock}
           />
           
-          {/* Door Openings Section */}
+          {/* Door/Window Openings Section */}
           <DoorOpeningsPanel
             room={selectedRoom}
             openings={State.getOpeningsForRoom(appState, selectedRoom.id)}
-            onAddDoor={onAddDoor}
+            onAddOpening={onAddOpening}
             onUpdateDoor={onUpdateDoor}
             onDeleteDoor={onDeleteDoor}
           />

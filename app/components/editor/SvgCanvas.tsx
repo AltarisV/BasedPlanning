@@ -310,12 +310,27 @@ export default function SvgCanvas({
         }
       }
       
+      // Different styling for doors vs windows
+      const isDoor = opening.type === 'door';
+      const openingColor = isDoor ? '#4ade80' : '#38bdf8'; // green for doors, sky blue for windows
+      const strokePattern = isDoor ? '8,4' : '4,2'; // dashed for doors, dotted for windows
+      
       if (wall.isHorizontal) {
-        segments.push(<rect key={`${wall.key}-door-bg-${i}`} x={wall.baseX + openingStart} y={wall.baseY} width={openingWidth} height={wall.wallHeight} fill="#f8fafc" pointerEvents="none" />);
-        segments.push(<line key={`${wall.key}-door-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY + wall.wallHeight / 2} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight / 2} stroke="#4ade80" strokeWidth={3} strokeDasharray="8,4" pointerEvents="none" />);
+        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX + openingStart} y={wall.baseY} width={openingWidth} height={wall.wallHeight} fill={isDoor ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
+        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY + wall.wallHeight / 2} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight / 2} stroke={openingColor} strokeWidth={isDoor ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
+        // Window: add small vertical lines at edges to indicate frame
+        if (!isDoor) {
+          segments.push(<line key={`${wall.key}-win-left-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY} x2={wall.baseX + openingStart} y2={wall.baseY + wall.wallHeight} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
+          segments.push(<line key={`${wall.key}-win-right-${i}`} x1={wall.baseX + openingStart + openingWidth} y1={wall.baseY} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
+        }
       } else {
-        segments.push(<rect key={`${wall.key}-door-bg-${i}`} x={wall.baseX} y={wall.baseY + openingStart} width={wall.wallWidth} height={openingWidth} fill="#f8fafc" pointerEvents="none" />);
-        segments.push(<line key={`${wall.key}-door-${i}`} x1={wall.baseX + wall.wallWidth / 2} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth / 2} y2={wall.baseY + openingStart + openingWidth} stroke="#4ade80" strokeWidth={3} strokeDasharray="8,4" pointerEvents="none" />);
+        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX} y={wall.baseY + openingStart} width={wall.wallWidth} height={openingWidth} fill={isDoor ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
+        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + wall.wallWidth / 2} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth / 2} y2={wall.baseY + openingStart + openingWidth} stroke={openingColor} strokeWidth={isDoor ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
+        // Window: add small horizontal lines at edges to indicate frame
+        if (!isDoor) {
+          segments.push(<line key={`${wall.key}-win-top-${i}`} x1={wall.baseX} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth} y2={wall.baseY + openingStart} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
+          segments.push(<line key={`${wall.key}-win-bottom-${i}`} x1={wall.baseX} y1={wall.baseY + openingStart + openingWidth} x2={wall.baseX + wall.wallWidth} y2={wall.baseY + openingStart + openingWidth} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
+        }
       }
       
       currentPos = openingStart + openingWidth;
