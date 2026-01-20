@@ -458,10 +458,39 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
         const draggingPlaced = dragState?.roomId === p.id && dragState?.targetType === 'placed';
         const isSelectedObject = appState.selectedObjectId === p.id;
         const rotation = p.rotationDeg ?? 0;
+        
+        // Calculate font size based on object dimensions
+        // Use the smaller dimension to ensure text fits
+        const minDim = Math.min(ow, oh);
+        const maxFontSize = 6;
+        const minFontSize = 2;
+        // Scale font to roughly 12% of the smaller dimension, capped
+        const calculatedFontSize = Math.min(maxFontSize, Math.max(minFontSize, minDim * 0.12));
+        
+        // Estimate if text will fit (rough char width ~60% of font size)
+        const estimatedTextWidth = def.name.length * calculatedFontSize * 0.6;
+        const textFits = estimatedTextWidth < ow * 0.9;
+        
+        // Truncate text if it doesn't fit
+        let displayText = def.name;
+        if (!textFits && ow > 15) {
+          const maxChars = Math.floor((ow * 0.85) / (calculatedFontSize * 0.6));
+          if (maxChars >= 2) {
+            displayText = def.name.slice(0, maxChars - 1) + '…';
+          } else {
+            displayText = '';
+          }
+        }
+        
+        // Hide text completely if object is too small
+        const showText = minDim >= 15 && displayText.length > 0;
+        
         return (
           <g key={p.id} data-placed-id={p.id} transform={`rotate(${rotation} ${ox + ow / 2} ${oy + oh / 2})`} style={{ cursor: draggingPlaced ? 'grabbing' : 'grab' }}>
             <rect x={ox} y={oy} width={ow} height={oh} fill={isSelectedObject ? "#93c5fd" : "#c7e1ff"} stroke={isSelectedObject ? "#2563eb" : "#0369a1"} strokeWidth={isSelectedObject ? 2 : 1} />
-            <text x={ox + ow/2} y={oy + oh/2} textAnchor="middle" dominantBaseline="middle" fontSize={10} pointerEvents="none" fill="#023047">{def.name}</text>
+            {showText && (
+              <text x={ox + ow/2} y={oy + oh/2} textAnchor="middle" dominantBaseline="middle" fontSize={calculatedFontSize} pointerEvents="none" fill="#023047">{displayText}</text>
+            )}
           </g>
         );
       })}

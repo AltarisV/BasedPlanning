@@ -324,9 +324,40 @@ export default function RoomEditor() {
               const placed = (appState.placedObjects ?? []).find((p) => p.id === label.placedId);
               const def = placed ? (appState.objectDefs ?? []).find((d) => d.id === placed.defId) : undefined;
               if (!placed || !def) return null;
+              
+              // Calculate object size in screen pixels
+              const svgEl = svgRef.current;
+              if (!svgEl) return null;
+              const rect = svgEl.getBoundingClientRect();
+              const vbSize = 10000;
+              const scaleToScreen = Math.min(rect.width / vbSize, rect.height / vbSize);
+              
+              // Get object dimensions (use individual size if set)
+              const objWidthCm = placed.widthCm ?? def.widthCm;
+              const objHeightCm = placed.heightCm ?? def.heightCm;
+              const objWidthPx = objWidthCm * SCALE * appState.zoom * scaleToScreen;
+              const objHeightPx = objHeightCm * SCALE * appState.zoom * scaleToScreen;
+              const minDimPx = Math.min(objWidthPx, objHeightPx);
+              
+              // Hide label if object is too small on screen
+              if (minDimPx < 30) return null;
+              
+              // Scale font size based on object size
+              const baseFontSize = Math.min(13, Math.max(8, minDimPx * 0.25));
+              
+              // Check if text fits, truncate if needed
+              const charWidth = baseFontSize * 0.6;
+              const maxChars = Math.floor(objWidthPx * 0.9 / charWidth);
+              let displayText = def.name;
+              if (def.name.length > maxChars && maxChars >= 2) {
+                displayText = def.name.slice(0, maxChars - 1) + '…';
+              } else if (maxChars < 2) {
+                return null;
+              }
+              
               return (
-                <div key={label.placedId} style={{ position: 'absolute', left: `${label.x}px`, top: `${label.y}px`, transform: 'translate(-50%, -50%)', fontSize: '13px', lineHeight: '16px', whiteSpace: 'nowrap', fontWeight: 500, zIndex: 20 }}>
-                  <div className="rounded-lg px-2.5 py-1 shadow-sm border bg-white/95 backdrop-blur-sm border-slate-200 text-slate-700">{def.name}</div>
+                <div key={label.placedId} style={{ position: 'absolute', left: `${label.x}px`, top: `${label.y}px`, transform: 'translate(-50%, -50%)', fontSize: `${baseFontSize}px`, lineHeight: '1.2', whiteSpace: 'nowrap', fontWeight: 500, zIndex: 20 }}>
+                  <div className="rounded-lg px-1.5 py-0.5 shadow-sm border bg-white/95 backdrop-blur-sm border-slate-200 text-slate-700">{displayText}</div>
                 </div>
               );
             })}
