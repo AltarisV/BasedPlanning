@@ -1,4 +1,7 @@
-@import "tailwindcss" source("../");
+@import "tailwindcss";
+
+@source "../app";
+@source "../src";
 
 * {
   box-sizing: border-box;
