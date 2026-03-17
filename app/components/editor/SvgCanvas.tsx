@@ -351,26 +351,42 @@ export default function SvgCanvas({
         let openEndX: number, openEndY: number;
         
         if (wall.isHorizontal) {
-          const wallCenterY = wall.baseY + wall.wallHeight / 2;
+          // Wall inner edge Y: the side facing into the room
+          // For north wall: inner edge is bottom (baseY + wallHeight)
+          // For south wall: inner edge is top (baseY)
+          const wallEdgeY = (wall.wallSide === 'north')
+            ? wall.baseY + wall.wallHeight
+            : wall.baseY;
+          // When swinging outward, use the opposite edge
+          const hingeEdgeY = swingDirection === 'inward' ? wallEdgeY
+            : (wall.wallSide === 'north' ? wall.baseY : wall.baseY + wall.wallHeight);
           const leftEdgeX = wall.baseX + openingStart;
           const rightEdgeX = wall.baseX + openingStart + openingWidth;
           
           hingeX = hingeFirst ? leftEdgeX : rightEdgeX;
-          hingeY = wallCenterY;
+          hingeY = hingeEdgeY;
           closedEndX = hingeFirst ? rightEdgeX : leftEdgeX;
-          closedEndY = wallCenterY;
+          closedEndY = hingeEdgeY;
           openEndX = hingeX;
-          openEndY = wallCenterY + perpSign * R;
+          openEndY = hingeEdgeY + perpSign * R;
         } else {
-          const wallCenterX = wall.baseX + wall.wallWidth / 2;
+          // Wall inner edge X: the side facing into the room
+          // For west wall: inner edge is right (baseX + wallWidth)
+          // For east wall: inner edge is left (baseX)
+          const wallEdgeX = (wall.wallSide === 'west')
+            ? wall.baseX + wall.wallWidth
+            : wall.baseX;
+          // When swinging outward, use the opposite edge
+          const hingeEdgeX = swingDirection === 'inward' ? wallEdgeX
+            : (wall.wallSide === 'west' ? wall.baseX : wall.baseX + wall.wallWidth);
           const topEdgeY = wall.baseY + openingStart;
           const bottomEdgeY = wall.baseY + openingStart + openingWidth;
           
-          hingeX = wallCenterX;
+          hingeX = hingeEdgeX;
           hingeY = hingeFirst ? topEdgeY : bottomEdgeY;
-          closedEndX = wallCenterX;
+          closedEndX = hingeEdgeX;
           closedEndY = hingeFirst ? bottomEdgeY : topEdgeY;
-          openEndX = wallCenterX + perpSign * R;
+          openEndX = hingeEdgeX + perpSign * R;
           openEndY = hingeY;
         }
         
