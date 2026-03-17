@@ -310,27 +310,89 @@ export default function SvgCanvas({
         }
       }
       
-      // Different styling for doors vs windows
+      // Different styling for doors/passages vs windows
       const isDoor = opening.type === 'door';
-      const openingColor = isDoor ? '#4ade80' : '#38bdf8'; // green for doors, sky blue for windows
-      const strokePattern = isDoor ? '8,4' : '4,2'; // dashed for doors, dotted for windows
+      const isPassage = opening.type === 'passage';
+      const isDoorLike = isDoor || isPassage; // same wall gap rendering
+      const openingColor = isDoorLike ? (isPassage ? '#94a3b8' : '#4ade80') : '#38bdf8';
+      const strokePattern = isDoorLike ? '8,4' : '4,2';
       
       if (wall.isHorizontal) {
-        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX + openingStart} y={wall.baseY} width={openingWidth} height={wall.wallHeight} fill={isDoor ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
-        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY + wall.wallHeight / 2} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight / 2} stroke={openingColor} strokeWidth={isDoor ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
+        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX + openingStart} y={wall.baseY} width={openingWidth} height={wall.wallHeight} fill={isDoorLike ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
+        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY + wall.wallHeight / 2} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight / 2} stroke={openingColor} strokeWidth={isDoorLike ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
         // Window: add small vertical lines at edges to indicate frame
-        if (!isDoor) {
+        if (!isDoorLike) {
           segments.push(<line key={`${wall.key}-win-left-${i}`} x1={wall.baseX + openingStart} y1={wall.baseY} x2={wall.baseX + openingStart} y2={wall.baseY + wall.wallHeight} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
           segments.push(<line key={`${wall.key}-win-right-${i}`} x1={wall.baseX + openingStart + openingWidth} y1={wall.baseY} x2={wall.baseX + openingStart + openingWidth} y2={wall.baseY + wall.wallHeight} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
         }
       } else {
-        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX} y={wall.baseY + openingStart} width={wall.wallWidth} height={openingWidth} fill={isDoor ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
-        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + wall.wallWidth / 2} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth / 2} y2={wall.baseY + openingStart + openingWidth} stroke={openingColor} strokeWidth={isDoor ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
+        segments.push(<rect key={`${wall.key}-opening-bg-${i}`} x={wall.baseX} y={wall.baseY + openingStart} width={wall.wallWidth} height={openingWidth} fill={isDoorLike ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />);
+        segments.push(<line key={`${wall.key}-opening-${i}`} x1={wall.baseX + wall.wallWidth / 2} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth / 2} y2={wall.baseY + openingStart + openingWidth} stroke={openingColor} strokeWidth={isDoorLike ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />);
         // Window: add small horizontal lines at edges to indicate frame
-        if (!isDoor) {
+        if (!isDoorLike) {
           segments.push(<line key={`${wall.key}-win-top-${i}`} x1={wall.baseX} y1={wall.baseY + openingStart} x2={wall.baseX + wall.wallWidth} y2={wall.baseY + openingStart} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
           segments.push(<line key={`${wall.key}-win-bottom-${i}`} x1={wall.baseX} y1={wall.baseY + openingStart + openingWidth} x2={wall.baseX + wall.wallWidth} y2={wall.baseY + openingStart + openingWidth} stroke={openingColor} strokeWidth={2} pointerEvents="none" />);
         }
+      }
+      
+      // Door swing arc (90° quarter-circle) — only for actual doors, not passages
+      if (isDoor) {
+        const swingSide = opening.swingSide ?? 'left';
+        const swingDirection = opening.swingDirection ?? 'inward';
+        const hingeFirst = swingSide === 'left';
+        
+        // Perpendicular direction sign: positive = into room
+        const inwardSign = wall.wallSide === 'north' || wall.wallSide === 'west' ? 1 : -1;
+        const perpSign = swingDirection === 'inward' ? inwardSign : -inwardSign;
+        const R = openingWidth;
+        
+        let hingeX: number, hingeY: number;
+        let closedEndX: number, closedEndY: number;
+        let openEndX: number, openEndY: number;
+        
+        if (wall.isHorizontal) {
+          const wallCenterY = wall.baseY + wall.wallHeight / 2;
+          const leftEdgeX = wall.baseX + openingStart;
+          const rightEdgeX = wall.baseX + openingStart + openingWidth;
+          
+          hingeX = hingeFirst ? leftEdgeX : rightEdgeX;
+          hingeY = wallCenterY;
+          closedEndX = hingeFirst ? rightEdgeX : leftEdgeX;
+          closedEndY = wallCenterY;
+          openEndX = hingeX;
+          openEndY = wallCenterY + perpSign * R;
+        } else {
+          const wallCenterX = wall.baseX + wall.wallWidth / 2;
+          const topEdgeY = wall.baseY + openingStart;
+          const bottomEdgeY = wall.baseY + openingStart + openingWidth;
+          
+          hingeX = wallCenterX;
+          hingeY = hingeFirst ? topEdgeY : bottomEdgeY;
+          closedEndX = wallCenterX;
+          closedEndY = hingeFirst ? bottomEdgeY : topEdgeY;
+          openEndX = wallCenterX + perpSign * R;
+          openEndY = hingeY;
+        }
+        
+        const sameSign = hingeFirst === (perpSign > 0);
+        const sweep = wall.isHorizontal ? (sameSign ? 1 : 0) : (sameSign ? 0 : 1);
+        
+        // Arc path from closed end to open end
+        const arcPath = `M ${closedEndX} ${closedEndY} A ${R} ${R} 0 0 ${sweep} ${openEndX} ${openEndY}`;
+        // Door leaf line from hinge to open end
+        const leafPath = `M ${hingeX} ${hingeY} L ${openEndX} ${openEndY}`;
+        
+        // Filled arc sector path (hinge -> closed end arc open end -> back to hinge)
+        const sectorPath = `M ${hingeX} ${hingeY} L ${closedEndX} ${closedEndY} A ${R} ${R} 0 0 ${sweep} ${openEndX} ${openEndY} Z`;
+        segments.push(
+          <path key={`${wall.key}-swing-fill-${i}`} d={sectorPath} fill="rgba(74, 222, 128, 0.15)" stroke="none" pointerEvents="none" />
+        );
+        segments.push(
+          <path key={`${wall.key}-swing-arc-${i}`} d={arcPath} fill="none" stroke="#22c55e" strokeWidth={2.5} strokeDasharray="8,4" opacity={0.85} pointerEvents="none" />
+        );
+        segments.push(
+          <path key={`${wall.key}-swing-leaf-${i}`} d={leafPath} fill="none" stroke="#22c55e" strokeWidth={3} opacity={0.85} pointerEvents="none" />
+        );
       }
       
       currentPos = openingStart + openingWidth;
@@ -395,6 +457,9 @@ export default function SvgCanvas({
             dragState={dragState}
           />
         ))}
+
+        {/* Placed objects - rendered after all rooms so they're always on top and clickable */}
+        <PlacedObjectsLayer appState={appState} dragState={dragState} />
 
         {/* Snap indicators */}
         {snap?.snappedX && (
@@ -462,8 +527,15 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
         </>
       )}
 
-      {/* Placed objects */}
-      {(appState.placedObjects ?? []).filter((p) => p.roomId === room.id).map((p) => {
+    </React.Fragment>
+  );
+}
+
+// Placed objects layer - renders ALL placed objects on top of all rooms for correct z-order and click handling
+function PlacedObjectsLayer({ appState, dragState }: { appState: AppState; dragState: ExtendedDragState | null }) {
+  return (
+    <g>
+      {(appState.placedObjects ?? []).map((p) => {
         const def = appState.objectDefs?.find((d) => d.id === p.defId);
         if (!def) return null;
         const ox = p.xCm * SCALE;
@@ -476,18 +548,14 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
         const rotation = p.rotationDeg ?? 0;
         
         // Calculate font size based on object dimensions
-        // Use the smaller dimension to ensure text fits
         const minDim = Math.min(ow, oh);
         const maxFontSize = 6;
         const minFontSize = 2;
-        // Scale font to roughly 12% of the smaller dimension, capped
         const calculatedFontSize = Math.min(maxFontSize, Math.max(minFontSize, minDim * 0.12));
         
-        // Estimate if text will fit (rough char width ~60% of font size)
         const estimatedTextWidth = def.name.length * calculatedFontSize * 0.6;
         const textFits = estimatedTextWidth < ow * 0.9;
         
-        // Truncate text if it doesn't fit
         let displayText = def.name;
         if (!textFits && ow > 15) {
           const maxChars = Math.floor((ow * 0.85) / (calculatedFontSize * 0.6));
@@ -498,7 +566,6 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
           }
         }
         
-        // Hide text completely if object is too small
         const showText = minDim >= 15 && displayText.length > 0;
         
         return (
@@ -510,7 +577,7 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
           </g>
         );
       })}
-    </React.Fragment>
+    </g>
   );
 }
 

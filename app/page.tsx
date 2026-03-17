@@ -8,7 +8,7 @@ import { saveState, loadState, exportStateAsJson, importStateFromJson } from '@/
 
 // Components
 import { LeftPanel, RightPanel } from './components/panels';
-import { KeyboardShortcutsHelp, SvgCanvas, EditorToolbarFull } from './components/editor';
+import { SvgCanvas, EditorToolbarFull } from './components/editor';
 import { SCALE, NUDGE_AMOUNT, NUDGE_AMOUNT_SHIFT, DEFAULT_DOOR_WIDTH } from './components/constants/editor';
 
 // Hooks
@@ -342,7 +342,7 @@ export default function RoomEditor() {
 
   // Door/Window handlers
   const handleAddOpening = (roomId: string, wall: WallSide, positionCm: number, widthCm: number, type: OpeningType) => updateState(State.addWallOpening(appState, roomId, wall, type, positionCm, widthCm));
-  const handleUpdateDoor = (openingId: string, updates: Partial<WallOpening>) => updateState(State.updateWallOpening(appState, openingId, updates.positionCm, updates.widthCm, updates.type));
+  const handleUpdateDoor = (openingId: string, updates: Partial<WallOpening>) => updateState(State.updateWallOpening(appState, openingId, updates.positionCm, updates.widthCm, updates.type, updates.swingSide, updates.swingDirection));
   const handleDeleteDoor = (openingId: string) => updateState(State.deleteWallOpening(appState, openingId));
 
   // Export/Import
@@ -512,7 +512,6 @@ export default function RoomEditor() {
         onClose={() => setRightPanelOpen(false)}
       />
 
-      <KeyboardShortcutsHelp />
     </div>
   );
 }

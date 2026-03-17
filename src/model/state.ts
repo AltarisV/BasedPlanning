@@ -232,11 +232,14 @@ export function nudgeSelectedObject(state: AppState, dxCm: number, dyCm: number)
   if (!placed) return state;
   
   const objectDef = state.objectDefs?.find(d => d.id === placed.defId);
+  // Use effective dimensions (placed override or def fallback)
+  const effectiveWidth = placed.widthCm ?? objectDef?.widthCm ?? 0;
+  const effectiveHeight = placed.heightCm ?? objectDef?.heightCm ?? 0;
   const newX = placed.xCm + dxCm;
   const newY = placed.yCm + dyCm;
   
-  // Find room at new position
-  const newRoomId = findRoomAtPosition(state, newX, newY, objectDef?.widthCm ?? 0, objectDef?.heightCm ?? 0);
+  // Find room at new position using effective dimensions
+  const newRoomId = findRoomAtPosition(state, newX, newY, effectiveWidth, effectiveHeight);
   
   return {
     ...state,
@@ -295,8 +298,12 @@ export function updatePlacedObjectPositionWithRoomDetection(
   const def = (state.objectDefs ?? []).find((d) => d.id === placed.defId);
   if (!def) return state;
   
-  // Find which room the object is now in
-  const newRoomId = findRoomAtPosition(state, xCm, yCm, def.widthCm, def.heightCm);
+  // Use effective dimensions (placed override or def fallback)
+  const effectiveWidth = placed.widthCm ?? def.widthCm;
+  const effectiveHeight = placed.heightCm ?? def.heightCm;
+  
+  // Find which room the object is now in using effective dimensions
+  const newRoomId = findRoomAtPosition(state, xCm, yCm, effectiveWidth, effectiveHeight);
   
   return {
     ...state,
@@ -653,15 +660,15 @@ export function addWallOpening(
   };
 }
 
-/**
- * Update a wall opening's position, width, and/or type.
- */
+/**\n * Update a wall opening's position, width, type, and/or swing properties.\n */
 export function updateWallOpening(
   state: AppState,
   openingId: string,
   positionCm?: number,
   widthCm?: number,
-  type?: OpeningType
+  type?: OpeningType,
+  swingSide?: 'left' | 'right',
+  swingDirection?: 'inward' | 'outward'
 ): AppState {
   return {
     ...state,
@@ -672,6 +679,8 @@ export function updateWallOpening(
             ...(positionCm !== undefined && { positionCm }),
             ...(widthCm !== undefined && { widthCm }),
             ...(type !== undefined && { type }),
+            ...(swingSide !== undefined && { swingSide }),
+            ...(swingDirection !== undefined && { swingDirection }),
           }
         : o
     ),
@@ -901,8 +910,14 @@ export function getCombinedWallOpenings(
     ...o,
     positionCm: o.positionCm + offset,
   })).filter(o => {
-    // Only include openings that fall within the shared overlap
-    return o.positionCm >= 0 && o.positionCm + o.widthCm <= myWallLength;
+    // Only include openings that intersect the shared overlap range
+    const start = o.positionCm;
+    const end = o.positionCm + o.widthCm;
+    const overlapStart = sharedWall.overlapStart;
+    const overlapEnd = sharedWall.overlapEnd;
+
+    // Include if the opening overlaps the shared range at all
+    return end > overlapStart && start < overlapEnd;
   });
   
   return [...myOpenings, ...translatedOpenings];

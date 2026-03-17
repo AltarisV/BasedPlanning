@@ -13,8 +13,8 @@ export interface WallThickness {
 /** Which wall of a room */
 export type WallSide = 'north' | 'south' | 'east' | 'west';
 
-/** Opening type (door or window) */
-export type OpeningType = 'door' | 'window';
+/** Opening type (door, window, or passage) */
+export type OpeningType = 'door' | 'window' | 'passage';
 
 /** A door or window opening in a wall */
 export interface WallOpening {
@@ -24,7 +24,9 @@ export interface WallOpening {
   type: OpeningType;
   positionCm: number; // distance from the left/top edge of the wall (cm)
   widthCm: number; // width of the opening (cm)
-  // For doors: swing direction could be added later
+  // Door swing properties
+  swingSide?: 'left' | 'right'; // which end of the opening is the hinge (default: 'left')
+  swingDirection?: 'inward' | 'outward'; // swing into or out of the room (default: 'inward')
 }
 
 export interface Room {

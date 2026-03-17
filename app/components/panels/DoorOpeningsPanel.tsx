@@ -84,8 +84,9 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
     setEditingId(null);
   };
 
-  // Separate doors and windows
+  // Separate doors, passages, and windows
   const doors = openings.filter(o => o.type === 'door');
+  const passages = openings.filter(o => o.type === 'passage');
   const windows = openings.filter(o => o.type === 'window');
 
   return (
@@ -107,6 +108,16 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
             }`}
           >
             🚪 Door
+          </button>
+          <button
+            onClick={() => { setOpeningType('passage'); setWidthCm('90'); }}
+            className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all ${
+              openingType === 'passage'
+                ? 'bg-slate-200 text-slate-700 ring-1 ring-slate-400'
+                : 'bg-white text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            🚶 Passage
           </button>
           <button
             onClick={() => { setOpeningType('window'); setWidthCm('100'); }}
@@ -164,11 +175,13 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
           onClick={handleAddOpening}
           className={`w-full btn text-white ${
             openingType === 'door' 
-              ? 'bg-emerald-600 hover:bg-emerald-700' 
+              ? 'bg-emerald-600 hover:bg-emerald-700'
+              : openingType === 'passage'
+              ? 'bg-slate-600 hover:bg-slate-700'
               : 'bg-sky-600 hover:bg-sky-700'
           }`}
         >
-          Add {openingType === 'door' ? 'Door' : 'Window'}
+          Add {openingType === 'door' ? 'Door' : openingType === 'passage' ? 'Passage' : 'Window'}
         </button>
 
         <p className="text-xs text-slate-400">
@@ -184,6 +197,14 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
             <div className="space-y-2">
               <p className="text-xs font-medium text-emerald-600">🚪 Doors ({doors.length})</p>
               {doors.map((opening) => renderOpeningItem(opening))}
+            </div>
+          )}
+
+          {/* Passages */}
+          {passages.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-slate-500">🚶 Passages ({passages.length})</p>
+              {passages.map((opening) => renderOpeningItem(opening))}
             </div>
           )}
 
@@ -206,11 +227,16 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
   );
 
   function renderOpeningItem(opening: WallOpening) {
+    const isDoor = opening.type === 'door';
+    const isPassage = opening.type === 'passage';
+    const swingSide = opening.swingSide ?? 'left';
+    const swingDirection = opening.swingDirection ?? 'inward';
+    
     return (
       <div
         key={opening.id}
         className={`bg-white border rounded-lg p-2.5 text-sm ${
-          opening.type === 'door' ? 'border-emerald-200' : 'border-sky-200'
+          isDoor ? 'border-emerald-200' : isPassage ? 'border-slate-300' : 'border-sky-200'
         }`}
       >
         {editingId === opening.id ? (
@@ -224,6 +250,12 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
                   className={`px-2 py-0.5 text-xs rounded ${editType === 'door' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
                 >
                   Door
+                </button>
+                <button
+                  onClick={() => setEditType('passage')}
+                  className={`px-2 py-0.5 text-xs rounded ${editType === 'passage' ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-500'}`}
+                >
+                  Passage
                 </button>
                 <button
                   onClick={() => setEditType('window')}
@@ -275,35 +307,96 @@ export function DoorOpeningsPanel({ room, openings, onAddOpening, onUpdateDoor, 
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="font-medium text-slate-700">{wallLabels[opening.wall].split(' ')[0]}</span>
-              <span className="text-slate-500 ml-2">
-                {opening.positionCm}cm → {opening.positionCm + opening.widthCm}cm
-              </span>
-              <span className="text-slate-400 text-xs ml-1">({opening.widthCm}cm)</span>
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-medium text-slate-700">{wallLabels[opening.wall].split(' ')[0]}</span>
+                <span className="text-slate-500 ml-2">
+                  {opening.positionCm}cm → {opening.positionCm + opening.widthCm}cm
+                </span>
+                <span className="text-slate-400 text-xs ml-1">({opening.widthCm}cm)</span>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => handleStartEdit(opening)}
+                  className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-md transition-all"
+                  title="Edit"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => onDeleteDoor(opening.id)}
+                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-all"
+                  title="Delete"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1">
-              <button
-                onClick={() => handleStartEdit(opening)}
-                className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-md transition-all"
-                title="Edit"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => onDeleteDoor(opening.id)}
-                className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-all"
-                title="Delete"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                </svg>
-              </button>
-            </div>
+            
+            {/* Door swing controls */}
+            {isDoor && (
+              <div className="mt-2 pt-2 border-t border-slate-100">
+                <p className="text-xs text-slate-400 mb-1.5">Swing</p>
+                <div className="flex gap-2">
+                  {/* Swing side toggle (hinge position) */}
+                  <div className="flex gap-0.5 flex-1">
+                    <button
+                      onClick={() => onUpdateDoor(opening.id, { swingSide: 'left' })}
+                      className={`flex-1 py-1 px-1.5 text-xs rounded-l-md font-medium transition-all ${
+                        swingSide === 'left'
+                          ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      title="Hinge on the left/top side"
+                    >
+                      ← Hinge
+                    </button>
+                    <button
+                      onClick={() => onUpdateDoor(opening.id, { swingSide: 'right' })}
+                      className={`flex-1 py-1 px-1.5 text-xs rounded-r-md font-medium transition-all ${
+                        swingSide === 'right'
+                          ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      title="Hinge on the right/bottom side"
+                    >
+                      Hinge →
+                    </button>
+                  </div>
+                  {/* Swing direction toggle (inward/outward) */}
+                  <div className="flex gap-0.5 flex-1">
+                    <button
+                      onClick={() => onUpdateDoor(opening.id, { swingDirection: 'inward' })}
+                      className={`flex-1 py-1 px-1.5 text-xs rounded-l-md font-medium transition-all ${
+                        swingDirection === 'inward'
+                          ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      title="Door swings inward (into room)"
+                    >
+                      Inward
+                    </button>
+                    <button
+                      onClick={() => onUpdateDoor(opening.id, { swingDirection: 'outward' })}
+                      className={`flex-1 py-1 px-1.5 text-xs rounded-r-md font-medium transition-all ${
+                        swingDirection === 'outward'
+                          ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                          : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      title="Door swings outward (out of room)"
+                    >
+                      Outward
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
