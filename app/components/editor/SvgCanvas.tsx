@@ -87,35 +87,59 @@ function calculateDistanceGuides(
 ): DistanceGuide[] {
   const guides: DistanceGuide[] = [];
   
-  // Room inner boundaries
-  const roomLeftCm = room.xCm;
-  const roomTopCm = room.yCm;
-  const roomRightCm = room.xCm + room.widthCm;
-  const roomBottomCm = room.yCm + room.heightCm;
-  
   // Use individual size if set, otherwise fall back to ObjectDef size
   const baseWidth = placed.widthCm ?? def.widthCm;
   const baseHeight = placed.heightCm ?? def.heightCm;
   
   // Calculate actual bounding box after rotation
-  // The SVG rotation is around the center of the ORIGINAL (unrotated) rect
   const originalCenterX = placed.xCm + baseWidth / 2;
   const originalCenterY = placed.yCm + baseHeight / 2;
   
-  const rotation = ((placed.rotationDeg ?? 0) % 360 + 360) % 360; // Normalize to 0-359
-  
-  // Use general rotation bounding box
+  const rotation = ((placed.rotationDeg ?? 0) % 360 + 360) % 360;
   const bbox = getRotatedBoundingBox(baseWidth, baseHeight, rotation);
   const boundingWidth = bbox.width;
   const boundingHeight = bbox.height;
   
-  // The center stays the same, but the bounding box corners change
   const objLeftCm = originalCenterX - boundingWidth / 2;
   const objTopCm = originalCenterY - boundingHeight / 2;
   const objRightCm = originalCenterX + boundingWidth / 2;
   const objBottomCm = originalCenterY + boundingHeight / 2;
   const objCenterXCm = originalCenterX;
   const objCenterYCm = originalCenterY;
+  
+  // Compute wall boundaries — for non-rect rooms, interpolate along angled edges
+  let roomLeftCm: number, roomRightCm: number, roomTopCm: number, roomBottomCm: number;
+  
+  if (!isRoomRectangular(room)) {
+    const corners = getRoomCorners(room);
+    // Helper: get X at a given Y along a line segment (p1 -> p2), clamped to [0,1]
+    const xAtY = (p1: Point2D, p2: Point2D, y: number): number => {
+      const dy = p2.y - p1.y;
+      if (Math.abs(dy) < 0.001) return (p1.x + p2.x) / 2;
+      const t = Math.max(0, Math.min(1, (y - p1.y) / dy));
+      return p1.x + (p2.x - p1.x) * t;
+    };
+    // Helper: get Y at a given X along a line segment (p1 -> p2), clamped to [0,1]
+    const yAtX = (p1: Point2D, p2: Point2D, x: number): number => {
+      const dx = p2.x - p1.x;
+      if (Math.abs(dx) < 0.001) return (p1.y + p2.y) / 2;
+      const t = Math.max(0, Math.min(1, (x - p1.x) / dx));
+      return p1.y + (p2.y - p1.y) * t;
+    };
+    // West wall: NW -> SW, interpolate X at object center Y
+    roomLeftCm = xAtY(corners.nw, corners.sw, objCenterYCm);
+    // East wall: NE -> SE, interpolate X at object center Y
+    roomRightCm = xAtY(corners.ne, corners.se, objCenterYCm);
+    // North wall: NW -> NE, interpolate Y at object center X
+    roomTopCm = yAtX(corners.nw, corners.ne, objCenterXCm);
+    // South wall: SW -> SE, interpolate Y at object center X
+    roomBottomCm = yAtX(corners.sw, corners.se, objCenterXCm);
+  } else {
+    roomLeftCm = room.xCm;
+    roomTopCm = room.yCm;
+    roomRightCm = room.xCm + room.widthCm;
+    roomBottomCm = room.yCm + room.heightCm;
+  }
   
   // Distance to left wall (west) - line from object's left edge to wall
   const distLeft = objLeftCm - roomLeftCm;
