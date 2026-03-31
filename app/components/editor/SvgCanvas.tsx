@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AppState, ExtendedDragState, MeasurePoint, WallSide, WallOpening, Room, ToolMode, PlacedObject, ObjectDef } from '@/src/model/types';
+import { AppState, ExtendedDragState, MeasurePoint, WallSide, WallOpening, OpeningType, Room, ToolMode, PlacedObject, ObjectDef } from '@/src/model/types';
 import * as State from '@/src/model/state';
 import * as Snap from '@/src/editor/Snap';
 import { SCALE } from '@/app/components/constants/editor';
@@ -61,6 +61,21 @@ type PolygonWallRenderData = {
   innerEnd: Point2D;   // end point on inner polygon (cm)
   outerStart: Point2D; // start point on outer polygon (cm, offset by wall thickness)
   outerEnd: Point2D;   // end point on outer polygon (cm, offset by wall thickness)
+};
+
+/** Opening data for polygon (non-rectangular) walls */
+type PolygonOpeningRenderData = {
+  key: string;
+  roomId: string;
+  wallSide: WallSide;
+  innerStart: Point2D;
+  innerEnd: Point2D;
+  outerStart: Point2D;
+  outerEnd: Point2D;
+  type: OpeningType;
+  widthCm: number;
+  swingSide?: 'left' | 'right';
+  swingDirection?: 'inward' | 'outward';
 };
 
 /** Calculate distance guides from an object to room walls */
@@ -184,10 +199,11 @@ export default function SvgCanvas({
   const isDraggingRoom = dragState && dragState.roomId !== '__pan__';
 
   // Compute wall rendering data
-  const { wallsWithoutOpenings, wallsWithOpenings, polygonWalls } = React.useMemo(() => {
+  const { wallsWithoutOpenings, wallsWithOpenings, polygonWalls, polygonOpenings } = React.useMemo(() => {
     const wallsWithoutOpenings: WallRenderData[] = [];
     const wallsWithOpenings: WallRenderData[] = [];
     const polygonWalls: PolygonWallRenderData[] = [];
+    const polygonOpenings: PolygonOpeningRenderData[] = [];
     
     appState.rooms.forEach((room) => {
       const isRect = isRoomRectangular(room);
@@ -202,6 +218,14 @@ export default function SvgCanvas({
           west: room.wallThickness?.west ?? appState.globalWallThicknessCm,
         };
         
+        const roomOpenings = State.getOpeningsForRoom(appState, room.id);
+        
+        // Helper: linearly interpolate between two points
+        const lerp = (a: Point2D, b: Point2D, t: number): Point2D => ({
+          x: a.x + (b.x - a.x) * t,
+          y: a.y + (b.y - a.y) * t,
+        });
+        
         // For each edge, compute the outward normal and offset
         const edges: Array<{ side: WallSide; start: Point2D; end: Point2D; thickness: number }> = [
           { side: 'north', start: corners.nw, end: corners.ne, thickness: wallThicknessData.north },
@@ -213,24 +237,112 @@ export default function SvgCanvas({
         edges.forEach(({ side, start, end, thickness }) => {
           const dx = end.x - start.x;
           const dy = end.y - start.y;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          if (len === 0) return;
+          const wallLenCm = Math.sqrt(dx * dx + dy * dy);
+          if (wallLenCm === 0) return;
           
           // Outward normal (for clockwise polygon: right-hand normal)
-          const nx = dy / len;
-          const ny = -dx / len;
+          const nx = dy / wallLenCm;
+          const ny = -dx / wallLenCm;
           
-          polygonWalls.push({
-            key: `${room.id}-poly-${side}`,
-            roomId: room.id,
-            wallSide: side,
-            innerStart: start,
-            innerEnd: end,
-            outerStart: { x: start.x + nx * thickness, y: start.y + ny * thickness },
-            outerEnd: { x: end.x + nx * thickness, y: end.y + ny * thickness },
-          });
+          const outerStart: Point2D = { x: start.x + nx * thickness, y: start.y + ny * thickness };
+          const outerEnd: Point2D = { x: end.x + nx * thickness, y: end.y + ny * thickness };
+          
+          // Get openings for this side (including adjacent room openings)
+          let openings: WallOpening[] = [];
+          let shouldRender = true;
+          const adj = State.findAdjacentRoom(appState, room, side);
+          if (adj) {
+            openings = State.getCombinedWallOpenings(appState, room, side, adj);
+            const myOpenings = roomOpenings.filter(o => o.wall === side);
+            const otherOpenings = State.getOpeningsForWall(appState, adj.otherRoom.id, adj.otherWall);
+            if (myOpenings.length > 0 || otherOpenings.length > 0) {
+              if (myOpenings.length > 0 && otherOpenings.length > 0) {
+                shouldRender = State.shouldRenderSharedWall(room, adj.otherRoom);
+              } else {
+                shouldRender = myOpenings.length > 0;
+              }
+            } else {
+              shouldRender = State.shouldRenderSharedWall(room, adj.otherRoom);
+            }
+          } else {
+            openings = roomOpenings.filter(o => o.wall === side);
+          }
+          
+          if (!shouldRender) return;
+          
+          if (openings.length === 0) {
+            // No openings: single polygon wall strip
+            polygonWalls.push({
+              key: `${room.id}-poly-${side}`,
+              roomId: room.id,
+              wallSide: side,
+              innerStart: start,
+              innerEnd: end,
+              outerStart,
+              outerEnd,
+            });
+          } else {
+            // Has openings: split polygon wall into segments with gaps
+            const sorted = [...openings].sort((a, b) => a.positionCm - b.positionCm);
+            let currentCm = 0;
+            
+            sorted.forEach((opening, i) => {
+              const openStartCm = opening.positionCm;
+              const openEndCm = opening.positionCm + opening.widthCm;
+              
+              // Solid segment before this opening
+              if (openStartCm > currentCm) {
+                const t1 = currentCm / wallLenCm;
+                const t2 = openStartCm / wallLenCm;
+                polygonWalls.push({
+                  key: `${room.id}-poly-${side}-seg${i}-before`,
+                  roomId: room.id,
+                  wallSide: side,
+                  innerStart: lerp(start, end, t1),
+                  innerEnd: lerp(start, end, t2),
+                  outerStart: lerp(outerStart, outerEnd, t1),
+                  outerEnd: lerp(outerStart, outerEnd, t2),
+                });
+              }
+              
+              // Opening indicator data
+              const tOpen1 = openStartCm / wallLenCm;
+              const tOpen2 = openEndCm / wallLenCm;
+              polygonOpenings.push({
+                key: `${room.id}-poly-${side}-opening-${i}`,
+                roomId: room.id,
+                wallSide: side,
+                innerStart: lerp(start, end, tOpen1),
+                innerEnd: lerp(start, end, tOpen2),
+                outerStart: lerp(outerStart, outerEnd, tOpen1),
+                outerEnd: lerp(outerStart, outerEnd, tOpen2),
+                type: opening.type,
+                widthCm: opening.widthCm,
+                swingSide: opening.swingSide,
+                swingDirection: opening.swingDirection,
+              });
+              
+              currentCm = openEndCm;
+            });
+            
+            // Solid segment after the last opening
+            if (currentCm < wallLenCm) {
+              const t1 = currentCm / wallLenCm;
+              polygonWalls.push({
+                key: `${room.id}-poly-${side}-seg-after`,
+                roomId: room.id,
+                wallSide: side,
+                innerStart: lerp(start, end, t1),
+                innerEnd: end,
+                outerStart: lerp(outerStart, outerEnd, t1),
+                outerEnd: outerEnd,
+              });
+            }
+          }
         });
-        // Don't return - fall through to rectangular wall rendering for openings
+        
+        // All walls handled as polygon — skip rectangular wall rendering
+        return;
       }
       
       // Standard wall rendering (handles openings for both rect and non-rect rooms)
@@ -320,7 +432,7 @@ export default function SvgCanvas({
       });
     });
     
-    return { wallsWithoutOpenings, wallsWithOpenings, polygonWalls };
+    return { wallsWithoutOpenings, wallsWithOpenings, polygonWalls, polygonOpenings };
   }, [appState]);
 
   const wallFill = '#8b7355';
@@ -526,6 +638,32 @@ export default function SvgCanvas({
               opacity="0.6"
               pointerEvents="none"
             />
+          );
+        })}
+        {/* Openings in polygon walls */}
+        {polygonOpenings.map((po) => {
+          const S = SCALE;
+          const isDoor = po.type === 'door';
+          const isPassage = po.type === 'passage';
+          const isDoorLike = isDoor || isPassage;
+          const openingColor = isDoorLike ? (isPassage ? '#94a3b8' : '#4ade80') : '#38bdf8';
+          const strokePattern = isDoorLike ? '8,4' : '4,2';
+          // Background fill for the opening gap
+          const bgPoints = `${po.innerStart.x * S},${po.innerStart.y * S} ${po.innerEnd.x * S},${po.innerEnd.y * S} ${po.outerEnd.x * S},${po.outerEnd.y * S} ${po.outerStart.x * S},${po.outerStart.y * S}`;
+          // Dashed line along the middle of the opening
+          const midStart = { x: (po.innerStart.x + po.outerStart.x) / 2 * S, y: (po.innerStart.y + po.outerStart.y) / 2 * S };
+          const midEnd = { x: (po.innerEnd.x + po.outerEnd.x) / 2 * S, y: (po.innerEnd.y + po.outerEnd.y) / 2 * S };
+          return (
+            <React.Fragment key={po.key}>
+              <polygon points={bgPoints} fill={isDoorLike ? '#f8fafc' : '#e0f2fe'} pointerEvents="none" />
+              <line x1={midStart.x} y1={midStart.y} x2={midEnd.x} y2={midEnd.y} stroke={openingColor} strokeWidth={isDoorLike ? 3 : 4} strokeDasharray={strokePattern} pointerEvents="none" />
+              {!isDoorLike && (
+                <>
+                  <line x1={po.innerStart.x * S} y1={po.innerStart.y * S} x2={po.outerStart.x * S} y2={po.outerStart.y * S} stroke={openingColor} strokeWidth={2} pointerEvents="none" />
+                  <line x1={po.innerEnd.x * S} y1={po.innerEnd.y * S} x2={po.outerEnd.x * S} y2={po.outerEnd.y * S} stroke={openingColor} strokeWidth={2} pointerEvents="none" />
+                </>
+              )}
+            </React.Fragment>
           );
         })}
 
