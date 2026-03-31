@@ -230,10 +230,10 @@ export default function SvgCanvas({
             outerEnd: { x: end.x + nx * thickness, y: end.y + ny * thickness },
           });
         });
-        return; // Skip rectangular wall rendering for this room
+        // Don't return - fall through to rectangular wall rendering for openings
       }
       
-      // Rectangular room: standard wall rendering
+      // Standard wall rendering (handles openings for both rect and non-rect rooms)
       const wallThicknessData = {
         north: room.wallThickness?.north ?? appState.globalWallThicknessCm,
         south: room.wallThickness?.south ?? appState.globalWallThicknessCm,
@@ -309,8 +309,11 @@ export default function SvgCanvas({
         
         if (shouldRender) {
           if (openings.length > 0) {
+            // Always render walls with openings (doors/windows/passages)
             wallsWithOpenings.push(wallData);
-          } else {
+          } else if (isRect) {
+            // Only render solid walls for rectangular rooms
+            // (non-rect rooms use polygon walls for solid sections)
             wallsWithoutOpenings.push(wallData);
           }
         }
