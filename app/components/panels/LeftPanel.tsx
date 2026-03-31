@@ -233,10 +233,10 @@ export default function LeftPanel({
                       onClick={(e) => {
                         e.stopPropagation();
                         const current = p.rotationDeg ?? 0;
-                        onRotatePlaced(p.id, (current + 90) % 360);
+                        onRotatePlaced(p.id, (current + 15) % 360);
                       }}
                       className="p-1.5 hover:bg-slate-200 rounded transition-all"
-                      title="Rotate 90°"
+                      title="Rotate 15°"
                     >
                       <svg className="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
                     </button>
@@ -265,7 +265,7 @@ export default function LeftPanel({
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${appState.selectedRoomIds.includes(room.id) ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
                   <span className="flex-1 truncate">{room.name}</span>
-                  <span className="text-xs text-slate-400">{room.widthCm}×{room.heightCm}</span>
+                  <span className="text-xs text-slate-400">{room.widthCm}×{room.heightCm}{room.wallLengths ? ' ◇' : ''}</span>
                 </div>
               </button>
             ))}

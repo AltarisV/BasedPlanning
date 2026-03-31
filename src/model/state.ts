@@ -3,7 +3,7 @@
  * All functions are pure and return new state objects.
  */
 
-import { AppState, Room, WallThickness, HistoryState, WallOpening, WallSide, OpeningType } from './types';
+import { AppState, Room, WallThickness, HistoryState, WallOpening, WallSide, OpeningType, WallLengths } from './types';
 import { ObjectDef, PlacedObject } from './types';
 
 export function createInitialState(): AppState {
@@ -412,6 +412,22 @@ export function updateRoomWallThickness(
 }
 
 /**
+ * Update a room's wall length overrides (for non-rectangular rooms).
+ */
+export function updateRoomWallLengths(
+  state: AppState,
+  roomId: string,
+  wallLengths: WallLengths | undefined
+): AppState {
+  return {
+    ...state,
+    rooms: state.rooms.map((r) =>
+      r.id === roomId ? { ...r, wallLengths } : r
+    ),
+  };
+}
+
+/**
  * Update the global default wall thickness.
  */
 export function updateGlobalWallThickness(
@@ -715,10 +731,10 @@ export function getOpeningsForWall(state: AppState, roomId: string, wall: WallSi
  * Get the maximum position for a wall opening (depends on wall length).
  */
 export function getWallLength(room: Room, wall: WallSide): number {
-  if (wall === 'north' || wall === 'south') {
-    return room.widthCm;
-  }
-  return room.heightCm;
+  if (wall === 'north') return room.wallLengths?.north ?? room.widthCm;
+  if (wall === 'south') return room.wallLengths?.south ?? room.widthCm;
+  if (wall === 'east') return room.wallLengths?.east ?? room.heightCm;
+  return room.wallLengths?.west ?? room.heightCm;
 }
 
 /**

@@ -209,10 +209,10 @@ export function calculateSnap(
   };
 }
 
-/** Snap tolerance for objects against walls - generous for easy wall placement */
-export const OBJECT_SNAP_TOLERANCE_CM = 25;
+/** Snap tolerance for objects against walls - only snap when very close (5cm) */
+export const OBJECT_SNAP_TOLERANCE_CM = 5;
 /** Snap tolerance for object-to-object alignment - tighter for precision */
-export const OBJECT_TO_OBJECT_SNAP_TOLERANCE_CM = 15;
+export const OBJECT_TO_OBJECT_SNAP_TOLERANCE_CM = 5;
 
 export interface PlacedObjectForSnap {
   id: string;

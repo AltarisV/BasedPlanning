@@ -5,6 +5,7 @@ import { AppState, ExtendedDragState, MeasurePoint, WallSide, WallOpening, Room,
 import * as State from '@/src/model/state';
 import * as Snap from '@/src/editor/Snap';
 import { SCALE } from '@/app/components/constants/editor';
+import { getRoomCorners, isRoomRectangular, getEffectiveWallLengths, getRotatedBoundingBox, Point2D } from '@/src/utils/geometry';
 
 /** Distance guides for object positioning */
 interface DistanceGuide {
@@ -51,6 +52,17 @@ type WallRenderData = {
   openingOffset: number;
 };
 
+/** Wall data for non-rectangular (polygon) rooms */
+type PolygonWallRenderData = {
+  key: string;
+  roomId: string;
+  wallSide: WallSide;
+  innerStart: Point2D; // start point on inner polygon (cm)
+  innerEnd: Point2D;   // end point on inner polygon (cm)
+  outerStart: Point2D; // start point on outer polygon (cm, offset by wall thickness)
+  outerEnd: Point2D;   // end point on outer polygon (cm, offset by wall thickness)
+};
+
 /** Calculate distance guides from an object to room walls */
 function calculateDistanceGuides(
   placed: PlacedObject,
@@ -76,20 +88,11 @@ function calculateDistanceGuides(
   const originalCenterY = placed.yCm + baseHeight / 2;
   
   const rotation = ((placed.rotationDeg ?? 0) % 360 + 360) % 360; // Normalize to 0-359
-  const isRotated90or270 = rotation === 90 || rotation === 270;
   
-  // After rotation, the bounding box changes
-  let boundingWidth: number;
-  let boundingHeight: number;
-  
-  if (isRotated90or270) {
-    // Width and height swap
-    boundingWidth = baseHeight;
-    boundingHeight = baseWidth;
-  } else {
-    boundingWidth = baseWidth;
-    boundingHeight = baseHeight;
-  }
+  // Use general rotation bounding box
+  const bbox = getRotatedBoundingBox(baseWidth, baseHeight, rotation);
+  const boundingWidth = bbox.width;
+  const boundingHeight = bbox.height;
   
   // The center stays the same, but the bounding box corners change
   const objLeftCm = originalCenterX - boundingWidth / 2;
@@ -181,11 +184,56 @@ export default function SvgCanvas({
   const isDraggingRoom = dragState && dragState.roomId !== '__pan__';
 
   // Compute wall rendering data
-  const { wallsWithoutOpenings, wallsWithOpenings } = React.useMemo(() => {
+  const { wallsWithoutOpenings, wallsWithOpenings, polygonWalls } = React.useMemo(() => {
     const wallsWithoutOpenings: WallRenderData[] = [];
     const wallsWithOpenings: WallRenderData[] = [];
+    const polygonWalls: PolygonWallRenderData[] = [];
     
     appState.rooms.forEach((room) => {
+      const isRect = isRoomRectangular(room);
+      
+      if (!isRect) {
+        // Non-rectangular room: compute wall strips along polygon edges
+        const corners = getRoomCorners(room);
+        const wallThicknessData = {
+          north: room.wallThickness?.north ?? appState.globalWallThicknessCm,
+          south: room.wallThickness?.south ?? appState.globalWallThicknessCm,
+          east: room.wallThickness?.east ?? appState.globalWallThicknessCm,
+          west: room.wallThickness?.west ?? appState.globalWallThicknessCm,
+        };
+        
+        // For each edge, compute the outward normal and offset
+        const edges: Array<{ side: WallSide; start: Point2D; end: Point2D; thickness: number }> = [
+          { side: 'north', start: corners.nw, end: corners.ne, thickness: wallThicknessData.north },
+          { side: 'east', start: corners.ne, end: corners.se, thickness: wallThicknessData.east },
+          { side: 'south', start: corners.se, end: corners.sw, thickness: wallThicknessData.south },
+          { side: 'west', start: corners.sw, end: corners.nw, thickness: wallThicknessData.west },
+        ];
+        
+        edges.forEach(({ side, start, end, thickness }) => {
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len === 0) return;
+          
+          // Outward normal (for clockwise polygon: right-hand normal)
+          const nx = dy / len;
+          const ny = -dx / len;
+          
+          polygonWalls.push({
+            key: `${room.id}-poly-${side}`,
+            roomId: room.id,
+            wallSide: side,
+            innerStart: start,
+            innerEnd: end,
+            outerStart: { x: start.x + nx * thickness, y: start.y + ny * thickness },
+            outerEnd: { x: end.x + nx * thickness, y: end.y + ny * thickness },
+          });
+        });
+        return; // Skip rectangular wall rendering for this room
+      }
+      
+      // Rectangular room: standard wall rendering
       const wallThicknessData = {
         north: room.wallThickness?.north ?? appState.globalWallThicknessCm,
         south: room.wallThickness?.south ?? appState.globalWallThicknessCm,
@@ -269,7 +317,7 @@ export default function SvgCanvas({
       });
     });
     
-    return { wallsWithoutOpenings, wallsWithOpenings };
+    return { wallsWithoutOpenings, wallsWithOpenings, polygonWalls };
   }, [appState]);
 
   const wallFill = '#8b7355';
@@ -463,6 +511,20 @@ export default function SvgCanvas({
         {wallsWithoutOpenings.map(renderWall)}
         {/* Walls with openings last (higher z-index) */}
         {wallsWithOpenings.map(renderWall)}
+        {/* Polygon walls for non-rectangular rooms */}
+        {polygonWalls.map((pw) => {
+          const S = SCALE;
+          const points = `${pw.innerStart.x * S},${pw.innerStart.y * S} ${pw.innerEnd.x * S},${pw.innerEnd.y * S} ${pw.outerEnd.x * S},${pw.outerEnd.y * S} ${pw.outerStart.x * S},${pw.outerStart.y * S}`;
+          return (
+            <polygon
+              key={pw.key}
+              points={points}
+              fill={wallFill}
+              opacity="0.6"
+              pointerEvents="none"
+            />
+          );
+        })}
 
         {/* Rooms */}
         {appState.rooms.map((room) => (
@@ -518,19 +580,42 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
   const draggingThis = dragState?.roomId === room.id;
   const handleSize = 40 / appState.zoom;
 
+  const isRect = isRoomRectangular(room);
+  const corners = !isRect ? getRoomCorners(room) : null;
+
+  // Polygon points string for non-rectangular rooms
+  const polygonPoints = corners
+    ? `${corners.nw.x * SCALE},${corners.nw.y * SCALE} ${corners.ne.x * SCALE},${corners.ne.y * SCALE} ${corners.se.x * SCALE},${corners.se.y * SCALE} ${corners.sw.x * SCALE},${corners.sw.y * SCALE}`
+    : '';
+
+  const fillColor = selected ? 'rgba(37, 99, 235, 0.1)' : 'rgba(229, 231, 235, 0.5)';
+  const strokeColor = selected ? '#2563eb' : '#d1d5db';
+  const strokeWidth = selected ? 3 : 2;
+
   return (
     <React.Fragment>
-      <rect
-        x={x} y={y} width={w} height={h}
-        data-room-id={room.id}
-        fill={selected ? 'rgba(37, 99, 235, 0.1)' : 'rgba(229, 231, 235, 0.5)'}
-        stroke={selected ? '#2563eb' : '#d1d5db'}
-        strokeWidth={selected ? 3 : 2}
-        style={{ cursor: draggingThis ? 'grabbing' : 'grab' }}
-      />
+      {isRect ? (
+        <rect
+          x={x} y={y} width={w} height={h}
+          data-room-id={room.id}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          style={{ cursor: draggingThis ? 'grabbing' : 'grab' }}
+        />
+      ) : (
+        <polygon
+          points={polygonPoints}
+          data-room-id={room.id}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          style={{ cursor: draggingThis ? 'grabbing' : 'grab' }}
+        />
+      )}
 
-      {/* Resize handles */}
-      {selected && (
+      {/* Resize handles (only for rectangular rooms) */}
+      {selected && isRect && (
         <>
           <rect x={x - handleSize / 2} y={y - handleSize / 2} width={handleSize} height={handleSize} fill="#2563eb" stroke="#fff" strokeWidth={1} data-resize-handle="nw" data-room-id={room.id} style={{ cursor: 'nwse-resize' }} />
           <rect x={x + w - handleSize / 2} y={y - handleSize / 2} width={handleSize} height={handleSize} fill="#2563eb" stroke="#fff" strokeWidth={1} data-resize-handle="ne" data-room-id={room.id} style={{ cursor: 'nesw-resize' }} />
@@ -540,6 +625,31 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
           <rect x={x + w / 2 - handleSize / 2} y={y + h - handleSize / 2} width={handleSize} height={handleSize} fill="#2563eb" stroke="#fff" strokeWidth={1} data-resize-handle="s" data-room-id={room.id} style={{ cursor: 'ns-resize' }} />
           <rect x={x - handleSize / 2} y={y + h / 2 - handleSize / 2} width={handleSize} height={handleSize} fill="#2563eb" stroke="#fff" strokeWidth={1} data-resize-handle="w" data-room-id={room.id} style={{ cursor: 'ew-resize' }} />
           <rect x={x + w - handleSize / 2} y={y + h / 2 - handleSize / 2} width={handleSize} height={handleSize} fill="#2563eb" stroke="#fff" strokeWidth={1} data-resize-handle="e" data-room-id={room.id} style={{ cursor: 'ew-resize' }} />
+        </>
+      )}
+
+      {/* Corner handles for non-rectangular rooms */}
+      {selected && !isRect && corners && (
+        <>
+          {[
+            { p: corners.nw, label: 'NW' },
+            { p: corners.ne, label: 'NE' },
+            { p: corners.se, label: 'SE' },
+            { p: corners.sw, label: 'SW' },
+          ].map(({ p, label }) => (
+            <circle
+              key={label}
+              cx={p.x * SCALE}
+              cy={p.y * SCALE}
+              r={handleSize / 2}
+              fill="#2563eb"
+              stroke="#fff"
+              strokeWidth={1}
+              data-room-id={room.id}
+              style={{ cursor: 'grab' }}
+              pointerEvents="none"
+            />
+          ))}
         </>
       )}
 

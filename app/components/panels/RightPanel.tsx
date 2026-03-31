@@ -11,6 +11,7 @@ interface RightPanelProps {
   onUpdateRoomName: (roomId: string, name: string) => void;
   onUpdateRoomDimensions: (roomId: string, width: number, height: number) => void;
   onUpdateRoomWallThickness: (roomId: string, wallThickness: { north?: number; south?: number; east?: number; west?: number }) => void;
+  onUpdateRoomWallLengths?: (roomId: string, wallLengths: { north?: number; south?: number; east?: number; west?: number } | undefined) => void;
   onDeleteRoom: (roomId: string) => void;
   onDeleteSelected: () => void;
   onToggleRoomLock: (roomId: string) => void;
@@ -32,6 +33,7 @@ export default function RightPanel({
   onUpdateRoomName,
   onUpdateRoomDimensions,
   onUpdateRoomWallThickness,
+  onUpdateRoomWallLengths,
   onDeleteRoom,
   onDeleteSelected,
   onToggleRoomLock,
@@ -134,6 +136,7 @@ export default function RightPanel({
             onUpdateName={onUpdateRoomName}
             onUpdateDimensions={onUpdateRoomDimensions}
             onUpdateWallThickness={onUpdateRoomWallThickness}
+            onUpdateWallLengths={onUpdateRoomWallLengths}
             onDelete={onDeleteRoom}
             onToggleLock={onToggleRoomLock}
           />
@@ -269,11 +272,11 @@ function SelectedObjectPanel({
             <input
               type="number"
               value={selectedObject.rotationDeg ?? 0}
-              step={90}
+              step={1}
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 if (!isNaN(val)) {
-                  onUpdateRotation(selectedObject.id, val % 360);
+                  onUpdateRotation(selectedObject.id, ((val % 360) + 360) % 360);
                 }
               }}
               className="input-field flex-1"
@@ -282,9 +285,19 @@ function SelectedObjectPanel({
             <button
               onClick={() => {
                 const current = selectedObject.rotationDeg ?? 0;
+                onUpdateRotation(selectedObject.id, (current + 15) % 360);
+              }}
+              className="btn btn-secondary text-xs"
+              title="Rotate 15°"
+            >
+              ↻ 15°
+            </button>
+            <button
+              onClick={() => {
+                const current = selectedObject.rotationDeg ?? 0;
                 onUpdateRotation(selectedObject.id, (current + 90) % 360);
               }}
-              className="btn btn-secondary"
+              className="btn btn-secondary text-xs"
               title="Rotate 90°"
             >
               ↻ 90°

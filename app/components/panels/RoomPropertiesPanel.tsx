@@ -14,6 +14,12 @@ interface RoomPropertiesPanelProps {
     east?: number;
     west?: number;
   }) => void;
+  onUpdateWallLengths?: (roomId: string, wallLengths: {
+    north?: number;
+    south?: number;
+    east?: number;
+    west?: number;
+  } | undefined) => void;
   onDelete: (roomId: string) => void;
   onToggleLock?: (roomId: string) => void;
 }
@@ -24,6 +30,7 @@ export function RoomPropertiesPanel({
   onUpdateName,
   onUpdateDimensions,
   onUpdateWallThickness,
+  onUpdateWallLengths,
   onDelete,
   onToggleLock,
 }: RoomPropertiesPanelProps) {
@@ -35,6 +42,13 @@ export function RoomPropertiesPanel({
   const [wallEast, setWallEast] = useState<string>(room.wallThickness?.east?.toString() ?? '');
   const [wallWest, setWallWest] = useState<string>(room.wallThickness?.west?.toString() ?? '');
 
+  // Wall lengths state
+  const [useIndividualWalls, setUseIndividualWalls] = useState(!!room.wallLengths);
+  const [wallLenNorth, setWallLenNorth] = useState<string>(room.wallLengths?.north?.toString() ?? room.widthCm.toString());
+  const [wallLenSouth, setWallLenSouth] = useState<string>(room.wallLengths?.south?.toString() ?? room.widthCm.toString());
+  const [wallLenEast, setWallLenEast] = useState<string>(room.wallLengths?.east?.toString() ?? room.heightCm.toString());
+  const [wallLenWest, setWallLenWest] = useState<string>(room.wallLengths?.west?.toString() ?? room.heightCm.toString());
+
   // Keep panel inputs in sync when selecting another room
   useEffect(() => {
     setName(room.name);
@@ -44,6 +58,11 @@ export function RoomPropertiesPanel({
     setWallSouth(room.wallThickness?.south?.toString() ?? '');
     setWallEast(room.wallThickness?.east?.toString() ?? '');
     setWallWest(room.wallThickness?.west?.toString() ?? '');
+    setUseIndividualWalls(!!room.wallLengths);
+    setWallLenNorth(room.wallLengths?.north?.toString() ?? room.widthCm.toString());
+    setWallLenSouth(room.wallLengths?.south?.toString() ?? room.widthCm.toString());
+    setWallLenEast(room.wallLengths?.east?.toString() ?? room.heightCm.toString());
+    setWallLenWest(room.wallLengths?.west?.toString() ?? room.heightCm.toString());
   }, [room.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNameChange = () => {
@@ -66,6 +85,36 @@ export function RoomPropertiesPanel({
       west: wallWest ? Number(wallWest) : undefined,
     };
     onUpdateWallThickness(room.id, walls);
+  };
+
+  const handleWallLengthsChange = () => {
+    if (!onUpdateWallLengths) return;
+    if (!useIndividualWalls) {
+      onUpdateWallLengths(room.id, undefined);
+      return;
+    }
+    const lengths = {
+      north: wallLenNorth ? Number(wallLenNorth) : undefined,
+      south: wallLenSouth ? Number(wallLenSouth) : undefined,
+      east: wallLenEast ? Number(wallLenEast) : undefined,
+      west: wallLenWest ? Number(wallLenWest) : undefined,
+    };
+    onUpdateWallLengths(room.id, lengths);
+  };
+
+  const handleToggleIndividualWalls = () => {
+    const newValue = !useIndividualWalls;
+    setUseIndividualWalls(newValue);
+    if (!newValue && onUpdateWallLengths) {
+      // Reset to rectangular
+      onUpdateWallLengths(room.id, undefined);
+    } else if (newValue) {
+      // Initialize with current dimensions
+      setWallLenNorth(room.widthCm.toString());
+      setWallLenSouth(room.widthCm.toString());
+      setWallLenEast(room.heightCm.toString());
+      setWallLenWest(room.heightCm.toString());
+    }
   };
 
   return (
@@ -142,6 +191,78 @@ export function RoomPropertiesPanel({
           </div>
         </div>
       </div>
+
+      {/* Individual Wall Lengths */}
+      {onUpdateWallLengths && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-slate-600">Wandlängen</label>
+            <button
+              onClick={handleToggleIndividualWalls}
+              className={`text-xs px-2 py-1 rounded-md transition-all ${
+                useIndividualWalls
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+            >
+              {useIndividualWalls ? 'Individuell' : 'Standard (B×H)'}
+            </button>
+          </div>
+          
+          {useIndividualWalls && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nord (oben)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={wallLenNorth}
+                  onChange={(e) => setWallLenNorth(e.target.value)}
+                  onBlur={handleWallLengthsChange}
+                  className="input-field text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Süd (unten)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={wallLenSouth}
+                  onChange={(e) => setWallLenSouth(e.target.value)}
+                  onBlur={handleWallLengthsChange}
+                  className="input-field text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Ost (rechts)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={wallLenEast}
+                  onChange={(e) => setWallLenEast(e.target.value)}
+                  onBlur={handleWallLengthsChange}
+                  className="input-field text-center"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">West (links)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={wallLenWest}
+                  onChange={(e) => setWallLenWest(e.target.value)}
+                  onBlur={handleWallLengthsChange}
+                  className="input-field text-center"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Wall Thickness */}
       <div className="mb-6">

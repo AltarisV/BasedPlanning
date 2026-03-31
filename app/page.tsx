@@ -326,6 +326,7 @@ export default function RoomEditor() {
   const handleUpdateRoomDimensions = (roomId: string, widthCm: number, heightCm: number) => updateState(State.updateRoomDimensions(appState, roomId, widthCm, heightCm));
   const handleUpdateGlobalWallThickness = (thickness: number) => updateState(State.updateGlobalWallThickness(appState, thickness));
   const handleUpdateRoomWallThickness = (roomId: string, wallThickness: any) => updateState(State.updateRoomWallThickness(appState, roomId, wallThickness));
+  const handleUpdateRoomWallLengths = (roomId: string, wallLengths: any) => updateState(State.updateRoomWallLengths(appState, roomId, wallLengths));
 
   // Object handlers
   const handleAddObjectDef = (name: string, widthCm: number, heightCm: number) => updateState(State.addObjectDef(appState, name, widthCm, heightCm));
@@ -497,6 +498,7 @@ export default function RoomEditor() {
         onUpdateRoomName={handleUpdateRoomName}
         onUpdateRoomDimensions={handleUpdateRoomDimensions}
         onUpdateRoomWallThickness={handleUpdateRoomWallThickness}
+        onUpdateRoomWallLengths={handleUpdateRoomWallLengths}
         onDeleteRoom={handleDeleteRoom}
         onDeleteSelected={handleDeleteSelected}
         onToggleRoomLock={(roomId) => updateState(State.toggleRoomLock(appState, roomId))}

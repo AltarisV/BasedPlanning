@@ -29,14 +29,23 @@ export interface WallOpening {
   swingDirection?: 'inward' | 'outward'; // swing into or out of the room (default: 'inward')
 }
 
+/** Per-wall length overrides for non-rectangular rooms */
+export interface WallLengths {
+  north?: number; // cm, top wall length (defaults to widthCm)
+  south?: number; // cm, bottom wall length (defaults to widthCm)
+  east?: number;  // cm, right wall length (defaults to heightCm)
+  west?: number;  // cm, left wall length (defaults to heightCm)
+}
+
 export interface Room {
   id: string;
   name: string;
-  xCm: number; // left edge position in cm
-  yCm: number; // top edge position in cm
-  widthCm: number; // width in cm
-  heightCm: number; // height in cm
+  xCm: number; // left edge position in cm (NW corner anchor)
+  yCm: number; // top edge position in cm (NW corner anchor)
+  widthCm: number; // bounding box width in cm
+  heightCm: number; // bounding box height in cm
   wallThickness?: WallThickness; // optional per-wall overrides
+  wallLengths?: WallLengths; // optional per-wall length overrides for non-rectangular rooms
   locked?: boolean; // if true, room cannot be moved or resized
 }
 

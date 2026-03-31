@@ -5,6 +5,7 @@ import { AppState, HistoryState, ExtendedDragState, ResizeHandle, ToolMode, Meas
 import * as State from '@/src/model/state';
 import * as Interaction from '@/src/editor/Interaction';
 import * as Snap from '@/src/editor/Snap';
+import { getRotatedBoundingBox } from '@/src/utils/geometry';
 
 interface UseSvgPointerHandlersProps {
   appState: AppState;
@@ -237,22 +238,20 @@ export function useSvgPointerHandlers({
       const objHeight = placed.heightCm ?? def.heightCm;
 
       const getVisualBounds = (objXCm: number, objYCm: number, origW: number, origH: number, rotationDeg: number) => {
-        const isRotated = rotationDeg % 180 !== 0;
-        if (!isRotated) return { x: objXCm, y: objYCm, w: origW, h: origH };
+        const normalizedAngle = ((rotationDeg % 360) + 360) % 360;
+        if (normalizedAngle === 0) return { x: objXCm, y: objYCm, w: origW, h: origH };
         const centerX = objXCm + origW / 2;
         const centerY = objYCm + origH / 2;
-        const newW = origH;
-        const newH = origW;
-        return { x: centerX - newW / 2, y: centerY - newH / 2, w: newW, h: newH };
+        const bbox = getRotatedBoundingBox(origW, origH, normalizedAngle);
+        return { x: centerX - bbox.width / 2, y: centerY - bbox.height / 2, w: bbox.width, h: bbox.height };
       };
 
       const visualToStorage = (visualX: number, visualY: number, origW: number, origH: number, rotationDeg: number) => {
-        const isRotated = rotationDeg % 180 !== 0;
-        if (!isRotated) return { xCm: visualX, yCm: visualY };
-        const newW = origH;
-        const newH = origW;
-        const centerX = visualX + newW / 2;
-        const centerY = visualY + newH / 2;
+        const normalizedAngle = ((rotationDeg % 360) + 360) % 360;
+        if (normalizedAngle === 0) return { xCm: visualX, yCm: visualY };
+        const bbox = getRotatedBoundingBox(origW, origH, normalizedAngle);
+        const centerX = visualX + bbox.width / 2;
+        const centerY = visualY + bbox.height / 2;
         return { xCm: centerX - origW / 2, yCm: centerY - origH / 2 };
       };
 
